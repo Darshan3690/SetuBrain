@@ -48,10 +48,11 @@ export async function POST(req: Request) {
       message: 'Curator Agent scanned graph.',
       status: getCuratorConflictStatus(),
     });
-  } catch (error: any) {
-    console.error('Curator API Error:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to execute curator action';
+    console.error('Curator API Error:', message);
     return NextResponse.json(
-      { ok: false, error: error.message || 'Failed to execute curator action' },
+      { ok: false, error: message },
       { status: 500 }
     );
   }

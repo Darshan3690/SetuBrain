@@ -14,10 +14,11 @@ export async function POST(req: Request) {
       ok: true,
       ...result,
     });
-  } catch (error: any) {
-    console.error('SetuBrain Query Error:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to execute graph query';
+    console.error('SetuBrain Query Error:', message);
     return NextResponse.json(
-      { ok: false, error: error.message || 'Failed to execute graph query' },
+      { ok: false, error: message },
       { status: 500 }
     );
   }

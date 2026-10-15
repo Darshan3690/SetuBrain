@@ -17,15 +17,10 @@ import {
   Copy,
   Check,
   Inbox,
-  Flame,
   Award,
-  Clock,
   Sparkles,
-  ArrowUpRight,
-  Activity,
   History,
-  XCircle,
-  FileCheck
+  XCircle
 } from 'lucide-react';
 
 interface TraversalResult {
@@ -36,10 +31,22 @@ interface TraversalResult {
   summary: string;
   authoritativeAnswer: string;
   graphTraversalPath: string[];
-  nodesInvolved: any[];
-  edgesInvolved: any[];
-  supersededPolicies?: any[];
-  conflictsDetected?: any[];
+  nodesInvolved: unknown[];
+  edgesInvolved: unknown[];
+  supersededPolicies?: Array<{
+    policyId?: string;
+    title?: string;
+    content?: string;
+    supersededBy?: string;
+    reason?: string;
+  }>;
+  conflictsDetected?: Array<{
+    conflictId: string;
+    policyA: string;
+    policyB: string;
+    severity: string;
+    description: string;
+  }>;
   curatorResolution?: {
     isResolved: boolean;
     precedence: string;
@@ -59,9 +66,9 @@ interface TraversalResult {
     decisionId: string;
     title: string;
     rationale: string;
-    policy: any;
-    sourceDocument: any;
-    authorizer: any;
+    policy?: { id?: string; properties?: { title?: string } };
+    sourceDocument?: { id?: string; properties?: { title?: string } };
+    authorizer?: { id?: string; properties?: { name?: string } };
   };
   compiledSkillMd?: string;
   latencyMs?: number;
@@ -211,8 +218,9 @@ export default function SetuBrainDashboard() {
       } else {
         showToast(`Seed warning: ${data.error || 'Failed'}`);
       }
-    } catch (e: any) {
-      showToast(`Seed notice: ${e.message}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Failed to seed';
+      showToast(`Seed notice: ${msg}`);
     } finally {
       setSeeding(false);
     }
@@ -236,8 +244,9 @@ export default function SetuBrainDashboard() {
       } else {
         showToast(`Query error: ${data.error}`);
       }
-    } catch (e: any) {
-      showToast(`Network error: ${e.message}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Network failure';
+      showToast(`Network error: ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -253,8 +262,9 @@ export default function SetuBrainDashboard() {
         showToast('Marcus Vance published PROC-ENG-GPU live to FalkorDB!');
         refreshAuxiliaryData();
       }
-    } catch (e: any) {
-      showToast(`Approve error: ${e.message}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Failed to approve';
+      showToast(`Approve error: ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -274,24 +284,57 @@ export default function SetuBrainDashboard() {
         showToast('Curator Agent resolved policy conflict: POL-SEC-101 supersedes POL-HR-202!');
         refreshAuxiliaryData();
       }
-    } catch (e: any) {
-      showToast(`Curator error: ${e.message}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Curator action failed';
+      showToast(`Curator error: ${msg}`);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    handleRunQuery();
-    refreshAuxiliaryData();
+    let isMounted = true;
+    const initData = async () => {
+      try {
+        const [qRes, expRes, curRes, deptRes, epRes, bmRes] = await Promise.all([
+          fetch('/api/query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenantId: 'tenant_acme', query: 'How do I purchase software?' }),
+          }),
+          fetch('/api/expert/approve'),
+          fetch('/api/curator'),
+          fetch('/api/departments?tenantId=tenant_acme'),
+          fetch('/api/episodes?tenantId=tenant_acme'),
+          fetch('/api/benchmark'),
+        ]);
 
-    // Fetch benchmarks once
-    fetch('/api/benchmark')
-      .then(r => r.json())
-      .then(d => {
-        if (d.ok) setBenchmarks(d.benchmarks);
-      })
-      .catch(console.error);
+        const [qData, expData, curData, deptData, epData, bmData] = await Promise.all([
+          qRes.json(),
+          expRes.json(),
+          curRes.json(),
+          deptRes.json(),
+          epRes.json(),
+          bmRes.json(),
+        ]);
+
+        if (isMounted) {
+          if (qData.ok) setResult(qData);
+          if (expData.ok) setIsGpuApproved(expData.isApproved);
+          if (curData.ok) setCuratorStatus(curData.conflictStatus);
+          if (deptData.ok) setDepartments(deptData.departments);
+          if (epData.ok) setEpisodes(epData.episodes);
+          if (bmData.ok) setBenchmarks(bmData.benchmarks);
+        }
+      } catch (err) {
+        console.error('Initialization error:', err);
+      }
+    };
+
+    initData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleCopySkill = () => {
@@ -864,7 +907,7 @@ export default function SetuBrainDashboard() {
                     ESCALATION #ESC-ENG-882
                   </span>
                   <h3 className="text-base font-bold text-white">
-                    "How do I request GPU cluster quota for a hackathon in Engineering?"
+                    &ldquo;How do I request GPU cluster quota for a hackathon in Engineering?&rdquo;
                   </h3>
                   <p className="text-xs text-slate-400">
                     Escalated by SetuBrain Deterministic Abstention Handler (Trap 4) due to missing procedure in Department(DEPT-ENG).
@@ -876,7 +919,7 @@ export default function SetuBrainDashboard() {
               <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3 text-xs">
                 <div className="font-semibold text-purple-300">Drafted Corporate Policy & Procedure for Approval:</div>
                 <div className="space-y-1 text-slate-300">
-                  <div><strong>Procedure ID</strong>: <code>PROC-ENG-GPU</code> ("GPU Cluster Quota & AI Compute Allocation Request")</div>
+                  <div><strong>Procedure ID</strong>: <code>PROC-ENG-GPU</code> (&ldquo;GPU Cluster Quota & AI Compute Allocation Request&rdquo;)</div>
                   <div><strong>Governing Policy</strong>: <code>POL-ENG-GPU-2026</code> (Version 1.0, APPROVED)</div>
                   <div><strong>Primary Application</strong>: Run:ai Orchestrator (<code>https://runai.infra.acme.internal</code>)</div>
                   <div><strong>Approved Limit</strong>: Up to 8x NVIDIA H100 GPUs auto-approved for 72 hours for hackathons.</div>
@@ -975,7 +1018,7 @@ export default function SetuBrainDashboard() {
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-950 text-red-400">0-Hour Wipe</span>
                   </div>
                   <p className="text-slate-300 leading-relaxed">
-                    "Security requires immediate 0-hour remote cryptographic wipe via CrowdStrike Falcon the moment a contractor or employee offboarding ticket is filed."
+                    &ldquo;Security requires immediate 0-hour remote cryptographic wipe via CrowdStrike Falcon the moment a contractor or employee offboarding ticket is filed.&rdquo;
                   </p>
                   <div className="text-[10px] text-slate-500 font-mono">Owner: Elena Rostova (Head of InfoSec)</div>
                 </div>
@@ -986,7 +1029,7 @@ export default function SetuBrainDashboard() {
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-400">7-Day Wait</span>
                   </div>
                   <p className="text-slate-300 leading-relaxed">
-                    "IT and Security must wait 7 calendar days after final employment date before wiping laptops so departing staff can retrieve personal tax documents."
+                    &ldquo;IT and Security must wait 7 calendar days after final employment date before wiping laptops so departing staff can retrieve personal tax documents.&rdquo;
                   </p>
                   <div className="text-[10px] text-slate-500 font-mono">Owner: David Kim (HR Compliance Lead)</div>
                 </div>

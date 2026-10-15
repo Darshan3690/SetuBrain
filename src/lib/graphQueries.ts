@@ -11,10 +11,22 @@ export interface TraversalResult {
   summary: string;
   authoritativeAnswer: string;
   graphTraversalPath: string[];
-  nodesInvolved: any[];
-  edgesInvolved: any[];
-  supersededPolicies?: any[];
-  conflictsDetected?: any[];
+  nodesInvolved: unknown[];
+  edgesInvolved: unknown[];
+  supersededPolicies?: Array<{
+    policyId?: string;
+    title?: string;
+    content?: string;
+    supersededBy?: string;
+    reason?: string;
+  }>;
+  conflictsDetected?: Array<{
+    conflictId: string;
+    policyA: string;
+    policyB: string;
+    severity: string;
+    description: string;
+  }>;
   curatorResolution?: {
     isResolved: boolean;
     precedence: string;
@@ -34,9 +46,9 @@ export interface TraversalResult {
     decisionId: string;
     title: string;
     rationale: string;
-    policy: any;
-    sourceDocument: any;
-    authorizer: any;
+    policy?: { id?: string; properties?: { title?: string } };
+    sourceDocument?: { id?: string; properties?: { title?: string } };
+    authorizer?: { id?: string; properties?: { name?: string } };
   };
   compiledSkillMd?: string;
   latencyMs?: number;
@@ -48,16 +60,12 @@ export async function queryTenantGraph(tenantId: string, naturalQuery: string, s
   const tenantMeta = ALLOWED_TENANTS[validTenant];
   const queryLower = naturalQuery.toLowerCase();
 
-  // Try live FalkorDB first if running, else query fallbackStore
-  let liveClientConnected = false;
+  // Test live FalkorDB connectivity if container is running
   try {
     const { graph } = await getTenantGraph(validTenant);
-    const testResult = await graph.query('RETURN 1');
-    if (testResult) {
-      liveClientConnected = true;
-    }
+    await graph.query('RETURN 1');
   } catch {
-    liveClientConnected = false;
+    // Falls back gracefully to in-memory graph
   }
 
   // Detect which trap or workflow is being addressed
@@ -82,18 +90,18 @@ export async function queryTenantGraph(tenantId: string, naturalQuery: string, s
 
       const compiledSkill = compileProcedureToSkill({
         tenantName: tenantMeta.name,
-        procedureTitle: proc?.properties.title || 'Software Purchase Request',
-        procedureId: proc?.id || 'GLX-PROC-01',
+        procedureTitle: String(proc?.properties.title || 'Software Purchase Request'),
+        procedureId: String(proc?.id || 'GLX-PROC-01'),
         department: 'Finance',
-        application: app?.properties.name || 'Brex',
-        applicationUrl: app?.properties.url || 'https://dashboard.brex.com',
-        smeName: sme?.properties.name || 'Hans Gruber',
-        smeEmail: sme?.properties.email || 'hans@globex.io',
-        governingPolicy: pol?.properties.title || 'Globex Strict Spend Policy',
-        policyVersion: pol?.properties.version || '1.0',
-        effectiveDate: pol?.properties.effective_date || '2026-01-01',
-        steps: proc?.properties.steps || '',
-        exceptions: proc?.properties.exceptions || 'None'
+        application: String(app?.properties.name || 'Brex'),
+        applicationUrl: String(app?.properties.url || 'https://dashboard.brex.com'),
+        smeName: String(sme?.properties.name || 'Hans Gruber'),
+        smeEmail: String(sme?.properties.email || 'hans@globex.io'),
+        governingPolicy: String(pol?.properties.title || 'Globex Strict Spend Policy'),
+        policyVersion: String(pol?.properties.version || '1.0'),
+        effectiveDate: String(pol?.properties.effective_date || '2026-01-01'),
+        steps: String(proc?.properties.steps || ''),
+        exceptions: String(proc?.properties.exceptions || 'None')
       });
 
       finalResult = {
@@ -124,18 +132,18 @@ export async function queryTenantGraph(tenantId: string, naturalQuery: string, s
 
       const compiledSkill = compileProcedureToSkill({
         tenantName: tenantMeta.name,
-        procedureTitle: proc?.properties.title || 'Software Purchase & SaaS Budget Request',
-        procedureId: proc?.id || 'PROC-SAAS-01',
+        procedureTitle: String(proc?.properties.title || 'Software Purchase & SaaS Budget Request'),
+        procedureId: String(proc?.id || 'PROC-SAAS-01'),
         department: 'Finance',
-        application: app?.properties.name || 'Ramp',
-        applicationUrl: app?.properties.url || 'https://app.ramp.com',
-        smeName: sme?.properties.name || 'Priya Sharma',
-        smeEmail: sme?.properties.email || 'priya@acme.com',
-        governingPolicy: pol?.properties.title || '2026 SaaS Procurement Governance Policy',
-        policyVersion: pol?.properties.version || '3.0',
-        effectiveDate: pol?.properties.effective_date || '2026-01-15',
-        steps: proc?.properties.steps || '',
-        exceptions: proc?.properties.exceptions || 'Emergency tooling approved by Engineering VP'
+        application: String(app?.properties.name || 'Ramp'),
+        applicationUrl: String(app?.properties.url || 'https://app.ramp.com'),
+        smeName: String(sme?.properties.name || 'Priya Sharma'),
+        smeEmail: String(sme?.properties.email || 'priya@acme.com'),
+        governingPolicy: String(pol?.properties.title || '2026 SaaS Procurement Governance Policy'),
+        policyVersion: String(pol?.properties.version || '3.0'),
+        effectiveDate: String(pol?.properties.effective_date || '2026-01-15'),
+        steps: String(proc?.properties.steps || ''),
+        exceptions: String(proc?.properties.exceptions || 'Emergency tooling approved by Engineering VP')
       });
 
       finalResult = {
@@ -187,8 +195,8 @@ export async function queryTenantGraph(tenantId: string, naturalQuery: string, s
       supersededPolicies: [
         {
           policyId: oldPol?.id,
-          title: oldPol?.properties.title,
-          content: oldPol?.properties.content,
+          title: String(oldPol?.properties.title || ''),
+          content: String(oldPol?.properties.content || ''),
           supersededBy: activePol?.id,
           reason: 'Formally superseded by POL-EXP-2026 on 2026-02-01'
         }
@@ -278,17 +286,17 @@ Executive alignment has established that **Zero-Trust Endpoint Wipe (POL-SEC-101
 
       const compiledSkill = compileProcedureToSkill({
         tenantName: tenantMeta.name,
-        procedureTitle: gpuProc?.properties.title || 'GPU Cluster Quota & AI Compute Allocation Request',
-        procedureId: gpuProc?.id || 'PROC-ENG-GPU',
+        procedureTitle: String(gpuProc?.properties.title || 'GPU Cluster Quota & AI Compute Allocation Request'),
+        procedureId: String(gpuProc?.id || 'PROC-ENG-GPU'),
         department: 'Engineering',
-        application: runaiApp?.properties.name || 'Run:ai Orchestrator',
-        applicationUrl: runaiApp?.properties.url || 'https://runai.infra.acme.internal',
-        smeName: marcusSme?.properties.name || 'Marcus Vance',
-        smeEmail: marcusSme?.properties.email || 'marcus@acme.com',
-        governingPolicy: gpuPol?.properties.title || '2026 GPU Cluster Allocation Policy',
-        policyVersion: gpuPol?.properties.version || '1.0',
-        effectiveDate: gpuPol?.properties.effective_date || '2026-10-15',
-        steps: gpuProc?.properties.steps || '1. Access Run:ai Orchestrator via Okta. 2. Select project workspace. 3. Up to 8x H100 GPUs auto-approved for 72 hrs. 4. Over 8 GPUs route to Marcus Vance.',
+        application: String(runaiApp?.properties.name || 'Run:ai Orchestrator'),
+        applicationUrl: String(runaiApp?.properties.url || 'https://runai.infra.acme.internal'),
+        smeName: String(marcusSme?.properties.name || 'Marcus Vance'),
+        smeEmail: String(marcusSme?.properties.email || 'marcus@acme.com'),
+        governingPolicy: String(gpuPol?.properties.title || '2026 GPU Cluster Allocation Policy'),
+        policyVersion: String(gpuPol?.properties.version || '1.0'),
+        effectiveDate: String(gpuPol?.properties.effective_date || '2026-10-15'),
+        steps: String(gpuProc?.properties.steps || '1. Access Run:ai Orchestrator via Okta. 2. Select project workspace. 3. Up to 8x H100 GPUs auto-approved for 72 hrs. 4. Over 8 GPUs route to Marcus Vance.'),
         exceptions: 'External client demos approved by Engineering VP'
       });
 
@@ -346,10 +354,10 @@ Rather than hallucinating an allocation limit, SetuBrain has deterministically r
           isAbstaining: true,
           reason: 'Missing procedure node in Engineering graph',
           routedSME: {
-            name: marcusSme?.properties.name || 'Marcus Vance',
-            email: marcusSme?.properties.email || 'marcus@acme.com',
+            name: String(marcusSme?.properties.name || 'Marcus Vance'),
+            email: String(marcusSme?.properties.email || 'marcus@acme.com'),
             role: 'SME',
-            title: marcusSme?.properties.title || 'Principal Infra Architect'
+            title: String(marcusSme?.properties.title || 'Principal Infra Architect')
           }
         }
       };
@@ -389,11 +397,11 @@ Rather than hallucinating an allocation limit, SetuBrain has deterministically r
       edgesInvolved: tenantData.edges.filter(e => e.from === 'DEC-901' || e.to === 'POL-OPS-300' || e.from === 'POL-OPS-300'),
       decisionProvenance: {
         decisionId: dec?.id || 'DEC-901',
-        title: dec?.properties.title || 'Refund Exception',
-        rationale: dec?.properties.rationale || '',
-        policy: pol,
-        sourceDocument: doc,
-        authorizer: sme
+        title: String(dec?.properties.title || 'Refund Exception'),
+        rationale: String(dec?.properties.rationale || ''),
+        policy: pol ? { id: pol.id, properties: { title: String(pol.properties.title || '') } } : undefined,
+        sourceDocument: doc ? { id: doc.id, properties: { title: String(doc.properties.title || '') } } : undefined,
+        authorizer: sme ? { id: sme.id, properties: { name: String(sme.properties.name || '') } } : undefined
       }
     };
   }

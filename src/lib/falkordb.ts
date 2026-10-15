@@ -1,4 +1,4 @@
-import type { Graph } from 'falkordb';
+import type { FalkorDB, Graph } from 'falkordb';
 
 export type TenantId = 'tenant_acme' | 'tenant_globex';
 
@@ -7,8 +7,8 @@ export const ALLOWED_TENANTS: Record<TenantId, { name: string; domain: string }>
   tenant_globex: { name: 'Globex Inc', domain: 'globex.io' },
 };
 
-let dbInstance: any = null;
-let FalkorDBModule: any = null;
+let dbInstance: FalkorDB | null = null;
+let FalkorDBClass: typeof FalkorDB | null = null;
 let isLiveFalkorDB = false;
 
 export async function isLiveFalkorAvailable(): Promise<boolean> {
@@ -24,14 +24,14 @@ export async function isLiveFalkorAvailable(): Promise<boolean> {
   }
 }
 
-export async function getFalkorClient(): Promise<any> {
-  if (!FalkorDBModule) {
+export async function getFalkorClient(): Promise<FalkorDB> {
+  if (!FalkorDBClass) {
     const mod = await import('falkordb');
-    FalkorDBModule = mod.FalkorDB || mod.default?.FalkorDB || mod;
+    FalkorDBClass = (mod.FalkorDB || mod.default?.FalkorDB || mod.default) as typeof FalkorDB;
   }
 
   if (!dbInstance) {
-    dbInstance = await FalkorDBModule.connect({
+    dbInstance = await FalkorDBClass.connect({
       socket: {
         host: process.env.FALKORDB_HOST || '127.0.0.1',
         port: Number(process.env.FALKORDB_PORT || 6379),

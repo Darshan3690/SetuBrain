@@ -12,10 +12,11 @@ export async function POST() {
       message: 'SetuBrain tenant graphs (tenant_acme & tenant_globex) seeded successfully!',
       ...result,
     });
-  } catch (error: any) {
-    console.error('FalkorDB Seed Error:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to seed FalkorDB';
+    console.error('FalkorDB Seed Error:', message);
     return NextResponse.json(
-      { ok: false, error: error.message || 'Failed to seed FalkorDB' },
+      { ok: false, error: message },
       { status: 500 }
     );
   }

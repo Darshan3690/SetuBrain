@@ -12,10 +12,11 @@ export async function POST() {
       message: 'GPU Cluster Quota procedure published live into FalkorDB as Marcus Vance (Principal Infra Architect)!',
       ...result,
     });
-  } catch (error: any) {
-    console.error('Expert Approve Error:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to approve procedure';
+    console.error('Expert Approve Error:', message);
     return NextResponse.json(
-      { ok: false, error: error.message || 'Failed to approve procedure' },
+      { ok: false, error: message },
       { status: 500 }
     );
   }

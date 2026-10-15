@@ -15,10 +15,11 @@ export async function GET(req: Request) {
       tenantId,
       departments,
     });
-  } catch (error: any) {
-    console.error('Departments API Error:', error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch departments';
+    console.error('Departments API Error:', message);
     return NextResponse.json(
-      { ok: false, error: error.message || 'Failed to fetch departments' },
+      { ok: false, error: message },
       { status: 500 }
     );
   }

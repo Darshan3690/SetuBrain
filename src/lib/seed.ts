@@ -1,17 +1,19 @@
 import { getTenantGraph } from './falkordb';
 
+export type PropertyValue = string | number | boolean | null | undefined | string[];
+
 // In-memory fallback dataset for when FalkorDB container is offline
 export interface GraphNode {
   id: string;
   labels: string[];
-  properties: Record<string, any>;
+  properties: Record<string, PropertyValue>;
 }
 
 export interface GraphEdge {
   from: string;
   to: string;
   type: string;
-  properties?: Record<string, any>;
+  properties?: Record<string, PropertyValue>;
 }
 
 export interface FallbackTenantGraph {
@@ -589,8 +591,9 @@ export async function seedSetuBrainGraphs() {
 
     await globexGraph.query(globexSeedCypher);
     globexLiveSeeded = true;
-  } catch (err: any) {
-    console.warn('FalkorDB connection warning (using resilient in-memory graph store):', err.message);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn('FalkorDB connection warning (using resilient in-memory graph store):', msg);
   }
 
   return {
