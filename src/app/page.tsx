@@ -21,9 +21,11 @@ import {
   Sparkles,
   History,
   XCircle,
-  Terminal
+  Terminal,
+  Globe
 } from 'lucide-react';
 import GraphTopologyMap from '@/components/GraphTopologyMap';
+import SpatialGraph3D from '@/components/SpatialGraph3D';
 import McpInspector from '@/components/McpInspector';
 
 interface TraversalResult {
@@ -170,6 +172,7 @@ export default function SetuBrainDashboard() {
   const [result, setResult] = useState<TraversalResult | null>(null);
   const [copiedSkill, setCopiedSkill] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [graphViewMode, setGraphViewMode] = useState<'3d' | '2d'>('3d');
 
   // Phase 2 state
   const [isGpuApproved, setIsGpuApproved] = useState(false);
@@ -675,8 +678,8 @@ export default function SetuBrainDashboard() {
                 {/* Left Column: Authoritative Answer & Trap Resolvers */}
                 <div className="lg:col-span-7 space-y-6">
                   {/* Primary Answer Card */}
-                  <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-xl space-y-4 backdrop-blur-md">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="p-6 rounded-3xl bg-slate-900/50 border border-white/10 shadow-2xl space-y-4 backdrop-blur-2xl ring-1 ring-white/5">
+                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
                       <div className="flex items-center space-x-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                         <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Authoritative Answer</span>
@@ -703,17 +706,24 @@ export default function SetuBrainDashboard() {
                     </div>
 
                     {result.executedCypher && (
-                      <div className="pt-3 border-t border-slate-800 space-y-1.5">
+                      <div className="pt-3 border-t border-white/10 space-y-2">
                         <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                          <span className="flex items-center space-x-1.5 text-indigo-400 font-semibold">
-                            <Terminal className="w-3.5 h-3.5" />
-                            <span>Executed Parameterized Cypher</span>
-                          </span>
-                          <span className="text-slate-500 text-[10px]">
+                          <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-1.5 pr-2 border-r border-slate-700/60">
+                              <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 inline-block shadow-sm shadow-red-500/30" />
+                              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block shadow-sm shadow-amber-500/30" />
+                              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block shadow-sm shadow-emerald-500/30" />
+                            </div>
+                            <span className="flex items-center space-x-1.5 text-indigo-300 font-semibold">
+                              <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>Executed Parameterized Cypher</span>
+                            </span>
+                          </div>
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-900 border border-white/5 text-slate-400 font-mono">
                             {result.isLiveEngine ? '⚡ FalkorDB Live Cypher Execution' : '🛡️ Resilient In-Memory Graph Query'}
                           </span>
                         </div>
-                        <pre className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-indigo-300 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-inner">
+                        <pre className="bg-slate-950/90 p-4 rounded-2xl border border-white/10 text-cyan-300 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-inner">
                           {result.executedCypher}
                         </pre>
                       </div>
@@ -860,13 +870,59 @@ export default function SetuBrainDashboard() {
 
                 {/* Right Column: Visual Graph Topology, Live Traversal Path & SKILL.md */}
                 <div className="lg:col-span-5 space-y-6">
-                  {/* Interactive Visual Graph Topology Map */}
-                  <GraphTopologyMap
-                    tenantId={tenant}
-                    trapType={result.trapType}
-                    isGpuApproved={isGpuApproved}
-                    curatorStatus={curatorStatus}
-                  />
+                  {/* Visualizer Mode Switcher (3D Spatial Orbit vs 2D Topology) */}
+                  <div className="flex items-center justify-between bg-slate-900/80 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-lg">
+                    <div className="flex items-center space-x-1">
+                      <button
+                        onClick={() => setGraphViewMode('3d')}
+                        className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                          graphViewMode === '3d'
+                            ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md shadow-cyan-500/20'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <Globe className="w-3.5 h-3.5 text-cyan-200" />
+                        <span>3D Spatial Orbit</span>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 font-mono">
+                          WebGL 3D
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => setGraphViewMode('2d')}
+                        className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                          graphViewMode === '2d'
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <GitBranch className="w-3.5 h-3.5 text-indigo-200" />
+                        <span>2D Schema Map</span>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 font-mono">
+                          SVG 2D
+                        </span>
+                      </button>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-400 pr-2 hidden sm:inline">
+                      FalkorDB Visualizer
+                    </span>
+                  </div>
+
+                  {/* Dynamic Visualizer Render */}
+                  {graphViewMode === '3d' ? (
+                    <SpatialGraph3D
+                      tenantId={tenant}
+                      trapType={result.trapType}
+                      isGpuApproved={isGpuApproved}
+                      curatorStatus={curatorStatus}
+                    />
+                  ) : (
+                    <GraphTopologyMap
+                      tenantId={tenant}
+                      trapType={result.trapType}
+                      isGpuApproved={isGpuApproved}
+                      curatorStatus={curatorStatus}
+                    />
+                  )}
 
                   {/* Graph Traversal Path */}
                   <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-xl space-y-4 backdrop-blur-md">

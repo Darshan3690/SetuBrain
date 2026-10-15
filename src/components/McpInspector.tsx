@@ -184,16 +184,23 @@ export default function McpInspector() {
 
         {/* Right Column: Live Response JSON */}
         <div className="lg:col-span-7">
-          <div className="p-5 rounded-3xl bg-slate-900/40 border border-slate-800 space-y-3">
+          <div className="p-5 rounded-3xl bg-slate-900/40 border border-white/10 space-y-3 backdrop-blur-2xl shadow-2xl">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>JSON-RPC 2.0 Response Payload</span>
-              </span>
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1.5 pr-2 border-r border-slate-700/60">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 inline-block shadow-sm shadow-red-500/30" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block shadow-sm shadow-amber-500/30" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block shadow-sm shadow-emerald-500/30" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>JSON-RPC 2.0 Response Payload</span>
+                </span>
+              </div>
               {mcpResponse && (
                 <button
                   onClick={handleCopyResponse}
-                  className="flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition-all"
+                  className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700 transition-all"
                 >
                   {copied ? (
                     <>
@@ -210,7 +217,7 @@ export default function McpInspector() {
               )}
             </div>
 
-            <pre className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-[11px] font-mono text-slate-300 max-h-96 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+            <pre className="bg-slate-950/90 p-4 rounded-2xl border border-white/10 text-[11px] font-mono text-cyan-300 max-h-96 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner">
               {mcpResponse || `// Click 'Execute MCP Tool Call' above to inspect live JSON-RPC 2.0 response from /api/mcp`}
             </pre>
           </div>

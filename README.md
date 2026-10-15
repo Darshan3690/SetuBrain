@@ -14,6 +14,7 @@ SetuBrain has been purposefully architected and implemented to qualify across **
 * **Deterministic Multi-Hop Graph Traversal**: Replaces fuzzy vector similarity with explicit graph paths traversing `(:Department)-[:RESPONSIBLE_FOR]->(:Procedure)-[:USES_APP]->(:Application)-[:GOVERNED_BY]->(:Policy)-[:APPROVED_BY]->(:Contact)`.
 * **5 Enterprise Trap Benchmarks**: Conquers all 5 fundamental failure modes where flat vector RAG catastrophically fails.
 * **Dynamic `SKILL.md` Compilation**: Automatically compiles verified graph paths into executable Antigravity agent skills.
+* **Interactive 3D WebGL Spatial Graph Engine**: Built-in Three.js force-directed WebGL visualizer with dynamic orbital camera, particle streams on traversal paths, spatial glass node HUD, and 1-click dual-mode toggle (3D Spatial Orbit vs 2D Topology Schema).
 
 ### 🧠 Track 02: Agent Memory & Coordination
 * **Curator Agent Contradiction Scanner**: Detects contradictory policy pairs linked by `[:CONFLICTS_WITH]`, halts execution, and allows curators to resolve contradictions into explicit `[:SUPERSEDES]` relationships.
