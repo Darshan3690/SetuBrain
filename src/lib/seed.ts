@@ -24,7 +24,231 @@ export const fallbackStore: Record<string, FallbackTenantGraph> = {
   tenant_globex: { nodes: [], edges: [] },
 };
 
+export let isGpuProcedureApproved = false;
+export let curatorConflictStatus: 'DETECTED' | 'RESOLVED' = 'DETECTED';
+
+export function getGpuApprovalStatus(): boolean {
+  return isGpuProcedureApproved;
+}
+
+export function getCuratorConflictStatus(): 'DETECTED' | 'RESOLVED' {
+  return curatorConflictStatus;
+}
+
+export async function approveGpuProcedure() {
+  isGpuProcedureApproved = true;
+
+  // Add to fallback store
+  const acme = fallbackStore.tenant_acme;
+  if (!acme.nodes.some(n => n.id === 'PROC-ENG-GPU')) {
+    acme.nodes.push(
+      {
+        id: 'APP-RUNAI',
+        labels: ['Application'],
+        properties: {
+          name: 'Run:ai Orchestrator',
+          purpose: 'Self-serve GPU cluster scheduling and workload isolation',
+          url: 'https://runai.infra.acme.internal',
+          access_procedure: 'Auto-provisioned via Okta Engineering Group',
+          sensitivity: 'HIGH'
+        }
+      },
+      {
+        id: 'PROC-ENG-GPU',
+        labels: ['Procedure'],
+        properties: {
+          title: 'GPU Cluster Quota & AI Compute Allocation Request',
+          steps: '1. Access Run:ai Orchestrator via Okta. 2. Select project workspace (e.g. #hackathon-2026). 3. Up to 8x NVIDIA H100 GPUs are auto-approved for 72-hour sessions. 4. Workloads requesting >8 GPUs require Principal Architect (Marcus Vance) authorization.',
+          completion_time: 'Instant (<5 minutes) for <=8 GPUs; 12 hours for custom clusters',
+          exceptions: 'External client demos approved by Engineering VP',
+          status: 'APPROVED',
+          effective_date: '2026-10-15',
+          review_date: '2027-10-15'
+        }
+      },
+      {
+        id: 'POL-ENG-GPU-2026',
+        labels: ['Policy'],
+        properties: {
+          title: '2026 GPU Cluster Allocation & Compute Governance Policy',
+          content: 'All high-performance computing (NVIDIA H100/A100 clusters) must be provisioned via Run:ai. Hackathons and experimental spikes have an auto-approved quota of up to 8x H100s for up to 72 hours. Larger cluster allocations require sign-off from Principal Infrastructure Architect (Marcus Vance).',
+          status: 'APPROVED',
+          version: '1.0',
+          effective_date: '2026-10-15',
+          review_date: '2027-10-15',
+          confidence: 1.0
+        }
+      }
+    );
+
+    acme.edges.push(
+      { from: 'DEPT-ENG', to: 'APP-RUNAI', type: 'OWNS' },
+      { from: 'DEPT-ENG', to: 'PROC-ENG-GPU', type: 'RESPONSIBLE_FOR' },
+      { from: 'PROC-ENG-GPU', to: 'APP-RUNAI', type: 'USES_APP' },
+      { from: 'PROC-ENG-GPU', to: 'POL-ENG-GPU-2026', type: 'GOVERNED_BY' },
+      { from: 'POL-ENG-GPU-2026', to: 'SME-MARCUS', type: 'APPROVED_BY' }
+    );
+  }
+
+  // Attempt live FalkorDB write
+  try {
+    const { graph } = await getTenantGraph('tenant_acme');
+    await graph.query(`
+      MATCH (deptEng:Department {id: 'DEPT-ENG'}), (smeMarcus:Contact {id: 'SME-MARCUS'})
+      MERGE (appRunai:Application {id: 'APP-RUNAI'})
+        ON CREATE SET appRunai.name = 'Run:ai Orchestrator', appRunai.purpose = 'Self-serve GPU cluster scheduling', appRunai.url = 'https://runai.infra.acme.internal'
+      MERGE (procGpu:Procedure {id: 'PROC-ENG-GPU'})
+        ON CREATE SET procGpu.title = 'GPU Cluster Quota & AI Compute Allocation Request',
+                      procGpu.steps = '1. Access Run:ai Orchestrator. 2. Select project workspace. 3. Up to 8x H100 GPUs auto-approved for 72 hrs. 4. Over 8 GPUs route to Marcus Vance.',
+                      procGpu.status = 'APPROVED', procGpu.effective_date = '2026-10-15'
+      MERGE (polGpu:Policy {id: 'POL-ENG-GPU-2026'})
+        ON CREATE SET polGpu.title = '2026 GPU Cluster Allocation Policy', polGpu.status = 'APPROVED', polGpu.version = '1.0'
+      MERGE (deptEng)-[:OWNS]->(appRunai)
+      MERGE (deptEng)-[:RESPONSIBLE_FOR]->(procGpu)
+      MERGE (procGpu)-[:USES_APP]->(appRunai)
+      MERGE (procGpu)-[:GOVERNED_BY]->(polGpu)
+      MERGE (polGpu)-[:APPROVED_BY]->(smeMarcus)
+    `);
+  } catch {
+    // live db optional
+  }
+
+  return { success: true, procedureId: 'PROC-ENG-GPU', author: 'Marcus Vance' };
+}
+
+export async function resolveCuratorConflict() {
+  curatorConflictStatus = 'RESOLVED';
+
+  // Update fallback store: replace CONFLICTS_WITH with SUPERSEDES
+  const acme = fallbackStore.tenant_acme;
+  acme.edges = acme.edges.filter(e => e.type !== 'CONFLICTS_WITH');
+  if (!acme.edges.some(e => e.from === 'POL-SEC-101' && e.to === 'POL-HR-202')) {
+    acme.edges.push({
+      from: 'POL-SEC-101',
+      to: 'POL-HR-202',
+      type: 'SUPERSEDES',
+      properties: {
+        reason: 'Executive alignment: Zero-Trust cryptographic wipe supersedes 7-day grace period for security compliance.',
+        resolved_by: 'CuratorAgent',
+        resolution_date: new Date().toISOString().split('T')[0]
+      }
+    });
+  }
+
+  // Attempt live FalkorDB resolution
+  try {
+    const { graph } = await getTenantGraph('tenant_acme');
+    await graph.query(`
+      MATCH (p1:Policy {id: 'POL-SEC-101'})-[r:CONFLICTS_WITH]->(p2:Policy {id: 'POL-HR-202'})
+      DELETE r
+      MERGE (p1)-[:SUPERSEDES {reason: 'Curator alignment: Zero-trust wipe supersedes grace period', resolved_by: 'CuratorAgent'}]->(p2)
+    `);
+  } catch {
+    // live db optional
+  }
+
+  return {
+    success: true,
+    status: 'RESOLVED',
+    precedence: 'POL-SEC-101 supersedes POL-HR-202',
+  };
+}
+
+export function getDepartmentHealthData(tenantId: string = 'tenant_acme') {
+  if (tenantId === 'tenant_globex') {
+    return [
+      {
+        id: 'GLX-FIN',
+        name: 'Finance',
+        slug: 'finance',
+        sme: { name: 'Hans Gruber', email: 'hans@globex.io', role: 'CFO' },
+        apps: ['Brex'],
+        proceduresCount: 1,
+        activePoliciesCount: 1,
+        openConflicts: 0,
+        unansweredEscalations: 0,
+        healthScore: 100,
+        status: 'HEALTHY' as const,
+      }
+    ];
+  }
+
+  const isConflictOpen = curatorConflictStatus === 'DETECTED';
+  const isGpuPending = !isGpuProcedureApproved;
+
+  return [
+    {
+      id: 'DEPT-FIN',
+      name: 'Finance',
+      slug: 'finance',
+      sme: { name: 'Priya Sharma', email: 'priya@acme.com', role: 'VP of Finance' },
+      apps: ['Ramp', 'Navan'],
+      proceduresCount: 2,
+      activePoliciesCount: 2,
+      openConflicts: 0,
+      unansweredEscalations: 0,
+      healthScore: 100,
+      status: 'HEALTHY' as const,
+    },
+    {
+      id: 'DEPT-ENG',
+      name: 'Engineering',
+      slug: 'engineering',
+      sme: { name: 'Marcus Vance', email: 'marcus@acme.com', role: 'Principal Infra Architect' },
+      apps: isGpuProcedureApproved ? ['Run:ai Orchestrator'] : [],
+      proceduresCount: isGpuProcedureApproved ? 1 : 0,
+      activePoliciesCount: isGpuProcedureApproved ? 1 : 0,
+      openConflicts: 0,
+      unansweredEscalations: isGpuPending ? 1 : 0,
+      healthScore: isGpuPending ? 70 : 100,
+      status: isGpuPending ? ('ATTENTION' as const) : ('HEALTHY' as const),
+    },
+    {
+      id: 'DEPT-SEC',
+      name: 'Security',
+      slug: 'security',
+      sme: { name: 'Elena Rostova', email: 'elena@acme.com', role: 'Head of InfoSec' },
+      apps: ['CrowdStrike Falcon'],
+      proceduresCount: 1,
+      activePoliciesCount: 1,
+      openConflicts: isConflictOpen ? 1 : 0,
+      unansweredEscalations: 0,
+      healthScore: isConflictOpen ? 60 : 98,
+      status: isConflictOpen ? ('CRITICAL' as const) : ('HEALTHY' as const),
+    },
+    {
+      id: 'DEPT-HR',
+      name: 'Human Resources',
+      slug: 'hr',
+      sme: { name: 'David Kim', email: 'david@acme.com', role: 'HR Compliance Lead' },
+      apps: [],
+      proceduresCount: 1,
+      activePoliciesCount: 1,
+      openConflicts: isConflictOpen ? 1 : 0,
+      unansweredEscalations: 0,
+      healthScore: isConflictOpen ? 60 : 98,
+      status: isConflictOpen ? ('CRITICAL' as const) : ('HEALTHY' as const),
+    },
+    {
+      id: 'DEPT-OPS',
+      name: 'Operations',
+      slug: 'operations',
+      sme: { name: 'Priya Sharma', email: 'priya@acme.com', role: 'Approver' },
+      apps: ['Stripe Ops Portal'],
+      proceduresCount: 1,
+      activePoliciesCount: 1,
+      openConflicts: 0,
+      unansweredEscalations: 0,
+      healthScore: 100,
+      status: 'HEALTHY' as const,
+    },
+  ];
+}
+
+
 export async function seedSetuBrainGraphs() {
+  isGpuProcedureApproved = false;
+  curatorConflictStatus = 'DETECTED';
   let acmeLiveSeeded = false;
   let globexLiveSeeded = false;
 

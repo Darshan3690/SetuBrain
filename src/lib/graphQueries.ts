@@ -1,12 +1,13 @@
 import { getTenantGraph, ALLOWED_TENANTS, TenantId } from './falkordb';
-import { fallbackStore } from './seed';
+import { fallbackStore, getGpuApprovalStatus, getCuratorConflictStatus } from './seed';
 import { compileProcedureToSkill } from './skillCompiler';
+import { recordEpisode } from './memory';
 
 export interface TraversalResult {
   tenantId: string;
   tenantName: string;
   query: string;
-  trapType?: 'trap1_multihop' | 'trap2_superseded' | 'trap3_conflict' | 'trap4_missing_knowledge' | 'trap5_provenance' | 'general';
+  trapType?: 'trap1_multihop' | 'trap2_superseded' | 'trap3_conflict' | 'trap3_conflict_resolved' | 'trap4_missing_knowledge' | 'trap4_sme_published' | 'trap5_provenance' | 'general';
   summary: string;
   authoritativeAnswer: string;
   graphTraversalPath: string[];
@@ -14,6 +15,11 @@ export interface TraversalResult {
   edgesInvolved: any[];
   supersededPolicies?: any[];
   conflictsDetected?: any[];
+  curatorResolution?: {
+    isResolved: boolean;
+    precedence: string;
+    resolvedBy: string;
+  };
   abstentionNotice?: {
     isAbstaining: boolean;
     reason: string;
@@ -33,9 +39,11 @@ export interface TraversalResult {
     authorizer: any;
   };
   compiledSkillMd?: string;
+  latencyMs?: number;
 }
 
-export async function queryTenantGraph(tenantId: string, naturalQuery: string): Promise<TraversalResult> {
+export async function queryTenantGraph(tenantId: string, naturalQuery: string, sessionId: string = 'sess_default'): Promise<TraversalResult> {
+  const startTime = performance.now();
   const validTenant = (tenantId in ALLOWED_TENANTS ? tenantId : 'tenant_acme') as TenantId;
   const tenantMeta = ALLOWED_TENANTS[validTenant];
   const queryLower = naturalQuery.toLowerCase();
@@ -56,10 +64,11 @@ export async function queryTenantGraph(tenantId: string, naturalQuery: string): 
   const isSoftwarePurchase = queryLower.includes('software') || queryLower.includes('purchase') || queryLower.includes('saas') || queryLower.includes('buy');
   const isHotel = queryLower.includes('hotel') || queryLower.includes('travel') || queryLower.includes('lodging') || queryLower.includes('reimbursement');
   const isWipeOrOffboard = queryLower.includes('wipe') || queryLower.includes('laptop') || queryLower.includes('offboard') || queryLower.includes('device');
-  const isGpuOrQuota = queryLower.includes('gpu') || queryLower.includes('quota') || queryLower.includes('cluster') || queryLower.includes('compute');
+  const isGpuOrQuota = queryLower.includes('gpu') || queryLower.includes('quota') || queryLower.includes('cluster') || queryLower.includes('compute') || queryLower.includes('hackathon');
   const isRefundOrDecision = queryLower.includes('refund') || queryLower.includes('dec-901') || queryLower.includes('provenance') || queryLower.includes('exception') || queryLower.includes('ticket');
 
   const tenantData = fallbackStore[validTenant] || fallbackStore.tenant_acme;
+  let finalResult: TraversalResult;
 
   // ============================================================================
   // TRAP 1: MULTI-HOP SOFTWARE PURCHASE & SKILL.MD COMPILATION
@@ -87,7 +96,7 @@ export async function queryTenantGraph(tenantId: string, naturalQuery: string): 
         exceptions: proc?.properties.exceptions || 'None'
       });
 
-      return {
+      finalResult = {
         tenantId: validTenant,
         tenantName: tenantMeta.name,
         query: naturalQuery,
@@ -105,62 +114,62 @@ export async function queryTenantGraph(tenantId: string, naturalQuery: string): 
         edgesInvolved: tenantData.edges.filter(e => e.from === 'GLX-FIN' || e.to === 'GLX-PROC-01' || e.from === 'GLX-PROC-01' || e.to === 'SME-HANS'),
         compiledSkillMd: compiledSkill
       };
+    } else {
+      // Default Acme Corp
+      const proc = tenantData.nodes.find(n => n.id === 'PROC-SAAS-01');
+      const pol = tenantData.nodes.find(n => n.id === 'POL-FIN-2026');
+      const app = tenantData.nodes.find(n => n.id === 'APP-RAMP');
+      const sme = tenantData.nodes.find(n => n.id === 'SME-PRIYA');
+      const doc = tenantData.nodes.find(n => n.id === 'DOC-FIN-2026');
+
+      const compiledSkill = compileProcedureToSkill({
+        tenantName: tenantMeta.name,
+        procedureTitle: proc?.properties.title || 'Software Purchase & SaaS Budget Request',
+        procedureId: proc?.id || 'PROC-SAAS-01',
+        department: 'Finance',
+        application: app?.properties.name || 'Ramp',
+        applicationUrl: app?.properties.url || 'https://app.ramp.com',
+        smeName: sme?.properties.name || 'Priya Sharma',
+        smeEmail: sme?.properties.email || 'priya@acme.com',
+        governingPolicy: pol?.properties.title || '2026 SaaS Procurement Governance Policy',
+        policyVersion: pol?.properties.version || '3.0',
+        effectiveDate: pol?.properties.effective_date || '2026-01-15',
+        steps: proc?.properties.steps || '',
+        exceptions: proc?.properties.exceptions || 'Emergency tooling approved by Engineering VP'
+      });
+
+      finalResult = {
+        tenantId: validTenant,
+        tenantName: tenantMeta.name,
+        query: naturalQuery,
+        trapType: 'trap1_multihop',
+        summary: 'Verified 4-Hop Traversal: Finance -> Ramp -> SaaS Policy v3.0 -> Priya Sharma (VP Finance).',
+        authoritativeAnswer: `At Acme Corp, new software purchases must be requested through Ramp. Self-serve auto-approval applies for spend under $500/month. Contracts over $5,000/year require VP of Finance (Priya Sharma) approval.`,
+        graphTraversalPath: [
+          'Department(DEPT-FIN)',
+          'RESPONSIBLE_FOR -> Procedure(PROC-SAAS-01)',
+          'USES_APP -> Application(APP-RAMP)',
+          'GOVERNED_BY -> Policy(POL-FIN-2026)',
+          'APPROVED_BY -> Contact(SME-PRIYA)',
+          'EVIDENCED_BY -> Document(DOC-FIN-2026)'
+        ],
+        nodesInvolved: [proc, pol, app, sme, doc].filter(Boolean),
+        edgesInvolved: tenantData.edges.filter(e => e.to === 'APP-RAMP' || e.to === 'PROC-SAAS-01' || e.from === 'PROC-SAAS-01' || e.to === 'SME-PRIYA'),
+        compiledSkillMd: compiledSkill
+      };
     }
-
-    // Default Acme Corp
-    const proc = tenantData.nodes.find(n => n.id === 'PROC-SAAS-01');
-    const pol = tenantData.nodes.find(n => n.id === 'POL-FIN-2026');
-    const app = tenantData.nodes.find(n => n.id === 'APP-RAMP');
-    const sme = tenantData.nodes.find(n => n.id === 'SME-PRIYA');
-    const doc = tenantData.nodes.find(n => n.id === 'DOC-FIN-2026');
-
-    const compiledSkill = compileProcedureToSkill({
-      tenantName: tenantMeta.name,
-      procedureTitle: proc?.properties.title || 'Software Purchase & SaaS Budget Request',
-      procedureId: proc?.id || 'PROC-SAAS-01',
-      department: 'Finance',
-      application: app?.properties.name || 'Ramp',
-      applicationUrl: app?.properties.url || 'https://app.ramp.com',
-      smeName: sme?.properties.name || 'Priya Sharma',
-      smeEmail: sme?.properties.email || 'priya@acme.com',
-      governingPolicy: pol?.properties.title || '2026 SaaS Procurement Governance Policy',
-      policyVersion: pol?.properties.version || '3.0',
-      effectiveDate: pol?.properties.effective_date || '2026-01-15',
-      steps: proc?.properties.steps || '',
-      exceptions: proc?.properties.exceptions || 'Emergency tooling approved by Engineering VP'
-    });
-
-    return {
-      tenantId: validTenant,
-      tenantName: tenantMeta.name,
-      query: naturalQuery,
-      trapType: 'trap1_multihop',
-      summary: 'Verified 4-Hop Traversal: Finance -> Ramp -> SaaS Policy v3.0 -> Priya Sharma (VP Finance).',
-      authoritativeAnswer: `At Acme Corp, new software purchases must be requested through Ramp. Self-serve auto-approval applies for spend under $500/month. Contracts over $5,000/year require VP of Finance (Priya Sharma) approval.`,
-      graphTraversalPath: [
-        'Department(DEPT-FIN)',
-        'RESPONSIBLE_FOR -> Procedure(PROC-SAAS-01)',
-        'USES_APP -> Application(APP-RAMP)',
-        'GOVERNED_BY -> Policy(POL-FIN-2026)',
-        'APPROVED_BY -> Contact(SME-PRIYA)',
-        'EVIDENCED_BY -> Document(DOC-FIN-2026)'
-      ],
-      nodesInvolved: [proc, pol, app, sme, doc].filter(Boolean),
-      edgesInvolved: tenantData.edges.filter(e => e.to === 'APP-RAMP' || e.to === 'PROC-SAAS-01' || e.from === 'PROC-SAAS-01' || e.to === 'SME-PRIYA'),
-      compiledSkillMd: compiledSkill
-    };
   }
 
   // ============================================================================
   // TRAP 2: SUPERSEDED POLICY TRAP ($250 new cap supersedes $150 legacy cap)
   // ============================================================================
-  if (isHotel) {
+  else if (isHotel) {
     const activePol = tenantData.nodes.find(n => n.id === 'POL-EXP-2026');
     const oldPol = tenantData.nodes.find(n => n.id === 'POL-EXP-2024');
     const proc = tenantData.nodes.find(n => n.id === 'PROC-TRV-02');
     const app = tenantData.nodes.find(n => n.id === 'APP-NAVAN');
 
-    return {
+    finalResult = {
       tenantId: validTenant,
       tenantName: tenantMeta.name,
       query: naturalQuery,
@@ -188,96 +197,176 @@ export async function queryTenantGraph(tenantId: string, naturalQuery: string): 
   }
 
   // ============================================================================
-  // TRAP 3: CONFLICTING POLICIES (Curator Agent Escalation)
+  // TRAP 3: CONFLICTING POLICIES (Curator Agent Escalation & Resolution)
   // ============================================================================
-  if (isWipeOrOffboard) {
+  else if (isWipeOrOffboard) {
     const secPol = tenantData.nodes.find(n => n.id === 'POL-SEC-101');
     const hrPol = tenantData.nodes.find(n => n.id === 'POL-HR-202');
     const proc = tenantData.nodes.find(n => n.id === 'PROC-SEC-03');
     const app = tenantData.nodes.find(n => n.id === 'APP-CROWD');
+    const isConflictResolved = getCuratorConflictStatus() === 'RESOLVED';
 
-    return {
-      tenantId: validTenant,
-      tenantName: tenantMeta.name,
-      query: naturalQuery,
-      trapType: 'trap3_conflict',
-      summary: 'POLICY CONFLICT DETECTED: 0-hour immediate wipe contradicts 7-day HR personal data retrieval grace period.',
-      authoritativeAnswer: `⚠️ **Policy Contradiction Detected between Security & Human Resources**:
+    if (isConflictResolved) {
+      finalResult = {
+        tenantId: validTenant,
+        tenantName: tenantMeta.name,
+        query: naturalQuery,
+        trapType: 'trap3_conflict_resolved',
+        summary: 'CURATOR AGENT RESOLUTION APPLIED: POL-SEC-101 Zero-Trust Wipe formally supersedes HR grace period.',
+        authoritativeAnswer: `✅ **Curator Agent Conflict Resolved**:
+Executive alignment has established that **Zero-Trust Endpoint Wipe (POL-SEC-101)** formally supersedes **HR Grace Period (POL-HR-202)**.
+- **Action**: Immediate 0-hour cryptographic wipe via CrowdStrike Falcon upon contract termination.
+- **Audited Resolution**: Approved by CuratorAgent for zero data leakage compliance.`,
+        graphTraversalPath: [
+          'Procedure(PROC-SEC-03)',
+          'GOVERNED_BY -> Policy(POL-SEC-101) [APPROVED / PRECEDENCE]',
+          'Policy(POL-SEC-101) -[:SUPERSEDES {resolved_by: "CuratorAgent"}]-> Policy(POL-HR-202) [SUPERSEDED]',
+          'USES_APP -> Application(APP-CROWD)'
+        ],
+        nodesInvolved: [secPol, hrPol, proc, app].filter(Boolean),
+        edgesInvolved: tenantData.edges.filter(e => e.to === 'PROC-SEC-03' || e.from === 'POL-SEC-101'),
+        curatorResolution: {
+          isResolved: true,
+          precedence: 'POL-SEC-101 supersedes POL-HR-202',
+          resolvedBy: 'CuratorAgent'
+        }
+      };
+    } else {
+      finalResult = {
+        tenantId: validTenant,
+        tenantName: tenantMeta.name,
+        query: naturalQuery,
+        trapType: 'trap3_conflict',
+        summary: 'POLICY CONFLICT DETECTED: 0-hour immediate wipe contradicts 7-day HR personal data retrieval grace period.',
+        authoritativeAnswer: `⚠️ **Policy Contradiction Detected between Security & Human Resources**:
 - **Security Mandate (POL-SEC-101)**: Requires immediate 0-hour remote cryptographic wipe via CrowdStrike Falcon upon departure.
 - **HR Policy (POL-HR-202)**: Mandates a 7-day grace period before wiping laptops for personal tax record recovery.
 *Automated execution is halted. This conflict has been registered with the Curator Agent for human executive alignment.*`,
-      graphTraversalPath: [
-        'Procedure(PROC-SEC-03)',
-        'GOVERNED_BY -> Policy(POL-SEC-101) [Security Zero-Trust Wipe]',
-        'GOVERNED_BY -> Policy(POL-HR-202) [HR 7-Day Grace Period]',
-        'Policy(POL-SEC-101) -[:CONFLICTS_WITH]-> Policy(POL-HR-202)'
-      ],
-      nodesInvolved: [secPol, hrPol, proc, app].filter(Boolean),
-      edgesInvolved: tenantData.edges.filter(e => e.to === 'PROC-SEC-03' || e.from === 'POL-SEC-101' || e.type === 'CONFLICTS_WITH'),
-      conflictsDetected: [
-        {
-          conflictId: 'CONF-01',
-          policyA: 'POL-SEC-101 (Zero-Trust Endpoint Wipe)',
-          policyB: 'POL-HR-202 (Offboarding Grace Period)',
-          severity: 'CRITICAL',
-          description: 'Immediate 0-hour remote wipe via CrowdStrike directly contradicts the 7-day grace period required for departing staff tax document retrieval.'
-        }
-      ]
-    };
+        graphTraversalPath: [
+          'Procedure(PROC-SEC-03)',
+          'GOVERNED_BY -> Policy(POL-SEC-101) [Security Zero-Trust Wipe]',
+          'GOVERNED_BY -> Policy(POL-HR-202) [HR 7-Day Grace Period]',
+          'Policy(POL-SEC-101) -[:CONFLICTS_WITH]-> Policy(POL-HR-202)'
+        ],
+        nodesInvolved: [secPol, hrPol, proc, app].filter(Boolean),
+        edgesInvolved: tenantData.edges.filter(e => e.to === 'PROC-SEC-03' || e.from === 'POL-SEC-101' || e.type === 'CONFLICTS_WITH'),
+        conflictsDetected: [
+          {
+            conflictId: 'CONF-01',
+            policyA: 'POL-SEC-101 (Zero-Trust Endpoint Wipe)',
+            policyB: 'POL-HR-202 (Offboarding Grace Period)',
+            severity: 'CRITICAL',
+            description: 'Immediate 0-hour remote wipe via CrowdStrike directly contradicts the 7-day grace period required for departing staff tax document retrieval.'
+          }
+        ]
+      };
+    }
   }
 
   // ============================================================================
-  // TRAP 4: DETERMINISTIC ABSTENTION & SME ROUTING (GPU Quotas)
+  // TRAP 4: DETERMINISTIC ABSTENTION & CLOSED LEARNING LOOP (GPU Quotas)
   // ============================================================================
-  if (isGpuOrQuota) {
-    const engDept = tenantData.nodes.find(n => n.id === 'DEPT-ENG');
-    const marcusSme = tenantData.nodes.find(n => n.id === 'SME-MARCUS');
+  else if (isGpuOrQuota) {
+    const isApproved = getGpuApprovalStatus();
 
-    return {
-      tenantId: validTenant,
-      tenantName: tenantMeta.name,
-      query: naturalQuery,
-      trapType: 'trap4_missing_knowledge',
-      summary: 'DETERMINISTIC ABSTENTION: No verified procedure found for GPU cluster quota. Routing to Engineering SME.',
-      authoritativeAnswer: `I do not have a verified corporate policy or procedure governing **GPU Cluster Quotas** in the knowledge graph. 
+    if (isApproved) {
+      const engDept = tenantData.nodes.find(n => n.id === 'DEPT-ENG');
+      const marcusSme = tenantData.nodes.find(n => n.id === 'SME-MARCUS');
+      const gpuProc = tenantData.nodes.find(n => n.id === 'PROC-ENG-GPU');
+      const gpuPol = tenantData.nodes.find(n => n.id === 'POL-ENG-GPU-2026');
+      const runaiApp = tenantData.nodes.find(n => n.id === 'APP-RUNAI');
+
+      const compiledSkill = compileProcedureToSkill({
+        tenantName: tenantMeta.name,
+        procedureTitle: gpuProc?.properties.title || 'GPU Cluster Quota & AI Compute Allocation Request',
+        procedureId: gpuProc?.id || 'PROC-ENG-GPU',
+        department: 'Engineering',
+        application: runaiApp?.properties.name || 'Run:ai Orchestrator',
+        applicationUrl: runaiApp?.properties.url || 'https://runai.infra.acme.internal',
+        smeName: marcusSme?.properties.name || 'Marcus Vance',
+        smeEmail: marcusSme?.properties.email || 'marcus@acme.com',
+        governingPolicy: gpuPol?.properties.title || '2026 GPU Cluster Allocation Policy',
+        policyVersion: gpuPol?.properties.version || '1.0',
+        effectiveDate: gpuPol?.properties.effective_date || '2026-10-15',
+        steps: gpuProc?.properties.steps || '1. Access Run:ai Orchestrator via Okta. 2. Select project workspace. 3. Up to 8x H100 GPUs auto-approved for 72 hrs. 4. Over 8 GPUs route to Marcus Vance.',
+        exceptions: 'External client demos approved by Engineering VP'
+      });
+
+      finalResult = {
+        tenantId: validTenant,
+        tenantName: tenantMeta.name,
+        query: naturalQuery,
+        trapType: 'trap4_sme_published',
+        summary: 'CLOSED LEARNING LOOP VERIFIED: Live graph traversal for newly approved GPU Procedure authored by Marcus Vance.',
+        authoritativeAnswer: `✅ **Verified GPU Cluster Quota Procedure (Published by Marcus Vance)**:
+- **Application**: Run:ai Orchestrator (APP-RUNAI)
+- **Quota Limit**: Up to 8x NVIDIA H100 GPUs auto-approved for up to 72 hours for hackathons and spikes.
+- **Large Allocation**: Workloads requesting >8 GPUs require Principal Architect (Marcus Vance) authorization.
+- **Governing Policy**: POL-ENG-GPU-2026 (APPROVED)
+*Compiled executable SKILL.md is ready for autonomous agent execution!*`,
+        graphTraversalPath: [
+          'Department(DEPT-ENG)',
+          'RESPONSIBLE_FOR -> Procedure(PROC-ENG-GPU)',
+          'USES_APP -> Application(APP-RUNAI)',
+          'GOVERNED_BY -> Policy(POL-ENG-GPU-2026)',
+          'APPROVED_BY -> Contact(SME-MARCUS)'
+        ],
+        nodesInvolved: [engDept, gpuProc, runaiApp, gpuPol, marcusSme].filter(Boolean),
+        edgesInvolved: tenantData.edges.filter(e => e.to === 'PROC-ENG-GPU' || e.from === 'PROC-ENG-GPU' || e.to === 'SME-MARCUS'),
+        compiledSkillMd: compiledSkill
+      };
+    } else {
+      const engDept = tenantData.nodes.find(n => n.id === 'DEPT-ENG');
+      const marcusSme = tenantData.nodes.find(n => n.id === 'SME-MARCUS');
+
+      finalResult = {
+        tenantId: validTenant,
+        tenantName: tenantMeta.name,
+        query: naturalQuery,
+        trapType: 'trap4_missing_knowledge',
+        summary: 'DETERMINISTIC ABSTENTION: No verified procedure found for GPU cluster quota. Routing to Engineering SME.',
+        authoritativeAnswer: `I do not have a verified corporate policy or procedure governing **GPU Cluster Quotas** in the knowledge graph. 
 
 Rather than hallucinating an allocation limit, SetuBrain has deterministically routed your request to the authoritative Subject Matter Expert for Engineering:
 - **SME**: Marcus Vance
 - **Title**: Principal Infra Architect
 - **Contact**: \`marcus@acme.com\`
-- **Department**: Engineering`,
-      graphTraversalPath: [
-        'Query: "GPU cluster quota"',
-        'Traverse: Department(DEPT-ENG)',
-        'Check: (DEPT-ENG)-[:RESPONSIBLE_FOR]->(Procedure {topic: "GPU Quota"}) -> NOT FOUND',
-        'Fallback: (DEPT-ENG)<-[:REPRESENTS]-(Contact: SME-MARCUS)'
-      ],
-      nodesInvolved: [engDept, marcusSme].filter(Boolean),
-      edgesInvolved: tenantData.edges.filter(e => e.from === 'SME-MARCUS' && e.to === 'DEPT-ENG'),
-      abstentionNotice: {
-        isAbstaining: true,
-        reason: 'Missing procedure node in Engineering graph',
-        routedSME: {
-          name: marcusSme?.properties.name || 'Marcus Vance',
-          email: marcusSme?.properties.email || 'marcus@acme.com',
-          role: 'SME',
-          title: marcusSme?.properties.title || 'Principal Infra Architect'
+- **Department**: Engineering
+
+*(Tip: Switch to the **SME Expert Inbox** tab to approve and publish Marcus Vance's official GPU procedure live into FalkorDB!)*`,
+        graphTraversalPath: [
+          'Query: "GPU cluster quota"',
+          'Traverse: Department(DEPT-ENG)',
+          'Check: (DEPT-ENG)-[:RESPONSIBLE_FOR]->(Procedure {topic: "GPU Quota"}) -> NOT FOUND',
+          'Fallback: (DEPT-ENG)<-[:REPRESENTS]-(Contact: SME-MARCUS)'
+        ],
+        nodesInvolved: [engDept, marcusSme].filter(Boolean),
+        edgesInvolved: tenantData.edges.filter(e => e.from === 'SME-MARCUS' && e.to === 'DEPT-ENG'),
+        abstentionNotice: {
+          isAbstaining: true,
+          reason: 'Missing procedure node in Engineering graph',
+          routedSME: {
+            name: marcusSme?.properties.name || 'Marcus Vance',
+            email: marcusSme?.properties.email || 'marcus@acme.com',
+            role: 'SME',
+            title: marcusSme?.properties.title || 'Principal Infra Architect'
+          }
         }
-      }
-    };
+      };
+    }
   }
 
   // ============================================================================
   // TRAP 5: DECISION PROVENANCE TRACING (Ticket -> Decision -> Policy -> Doc)
   // ============================================================================
-  if (isRefundOrDecision) {
+  else if (isRefundOrDecision) {
     const dec = tenantData.nodes.find(n => n.id === 'DEC-901');
     const pol = tenantData.nodes.find(n => n.id === 'POL-OPS-300');
     const doc = tenantData.nodes.find(n => n.id === 'DOC-SLACK-901');
     const sme = tenantData.nodes.find(n => n.id === 'SME-PRIYA');
     const app = tenantData.nodes.find(n => n.id === 'APP-STRIPE');
 
-    return {
+    finalResult = {
       tenantId: validTenant,
       tenantName: tenantMeta.name,
       query: naturalQuery,
@@ -310,15 +399,40 @@ Rather than hallucinating an allocation limit, SetuBrain has deterministically r
   }
 
   // Fallback general query
-  return {
+  else {
+    finalResult = {
+      tenantId: validTenant,
+      tenantName: tenantMeta.name,
+      query: naturalQuery,
+      trapType: 'general',
+      summary: `Graph query executed against ${tenantMeta.name}.`,
+      authoritativeAnswer: `Queried the ${tenantMeta.name} knowledge graph for "${naturalQuery}". Select one of the pre-configured trap demonstrations to inspect deep multi-hop paths, supersessions, or curator conflict resolution.`,
+      graphTraversalPath: [`Department(Finance)`, `Tenant(${validTenant})`],
+      nodesInvolved: tenantData.nodes.slice(0, 3),
+      edgesInvolved: tenantData.edges.slice(0, 2)
+    };
+  }
+
+  const durationMs = Math.max(1, Math.round(performance.now() - startTime));
+  finalResult.latencyMs = durationMs;
+
+  // Determine episode status
+  let epStatus: 'SUCCESS' | 'CONFLICT_HALTED' | 'ABSTAINED_ROUTED' | 'SUPERSEDED_FILTERED' | 'SME_PUBLISHED' = 'SUCCESS';
+  if (finalResult.trapType === 'trap3_conflict') epStatus = 'CONFLICT_HALTED';
+  else if (finalResult.trapType === 'trap4_missing_knowledge') epStatus = 'ABSTAINED_ROUTED';
+  else if (finalResult.trapType === 'trap2_superseded') epStatus = 'SUPERSEDED_FILTERED';
+  else if (finalResult.trapType === 'trap4_sme_published') epStatus = 'SME_PUBLISHED';
+
+  // Record into episodic memory
+  recordEpisode({
+    sessionId,
     tenantId: validTenant,
-    tenantName: tenantMeta.name,
     query: naturalQuery,
-    trapType: 'general',
-    summary: `Graph query executed against ${tenantMeta.name}.`,
-    authoritativeAnswer: `Queried the ${tenantMeta.name} knowledge graph for "${naturalQuery}". Select one of the pre-configured trap demonstrations to inspect deep multi-hop paths, supersessions, or curator conflict resolution.`,
-    graphTraversalPath: [`Department(Finance)`, `Tenant(${validTenant})`],
-    nodesInvolved: tenantData.nodes.slice(0, 3),
-    edgesInvolved: tenantData.edges.slice(0, 2)
-  };
+    status: epStatus,
+    trapType: finalResult.trapType || 'general',
+    cypherLatencyMs: durationMs,
+    summary: finalResult.summary
+  });
+
+  return finalResult;
 }
