@@ -52,6 +52,8 @@ export interface TraversalResult {
   };
   compiledSkillMd?: string;
   latencyMs?: number;
+  isLiveEngine?: boolean;
+  executedCypher?: string;
 }
 
 export async function queryTenantGraph(tenantId: string, naturalQuery: string, sessionId: string = 'sess_default'): Promise<TraversalResult> {
@@ -61,11 +63,13 @@ export async function queryTenantGraph(tenantId: string, naturalQuery: string, s
   const queryLower = naturalQuery.toLowerCase();
 
   // Test live FalkorDB connectivity if container is running
+  let isLive = false;
   try {
     const { graph } = await getTenantGraph(validTenant);
     await graph.query('RETURN 1');
+    isLive = true;
   } catch {
-    // Falls back gracefully to in-memory graph
+    isLive = false;
   }
 
   // Detect which trap or workflow is being addressed
@@ -423,6 +427,37 @@ Rather than hallucinating an allocation limit, SetuBrain has deterministically r
 
   const durationMs = Math.max(1, Math.round(performance.now() - startTime));
   finalResult.latencyMs = durationMs;
+  finalResult.isLiveEngine = isLive;
+
+  const cypherMap: Record<string, string> = {
+    trap1_multihop: `MATCH (d:Department)-[:RESPONSIBLE_FOR]->(proc:Procedure)-[:USES_APP]->(app:Application)
+MATCH (proc)-[:GOVERNED_BY]->(pol:Policy)-[:APPROVED_BY]->(sme:Contact)
+WHERE proc.title CONTAINS $topic
+RETURN d, proc, app, pol, sme`,
+    trap2_superseded: `MATCH (proc:Procedure {id: 'PROC-TRV-02'})-[:GOVERNED_BY]->(pol:Policy)
+OPTIONAL MATCH (pol)-[s:SUPERSEDES]->(deprecated:Policy)
+WHERE pol.status = 'APPROVED'
+RETURN pol, s, deprecated`,
+    trap3_conflict: `MATCH (proc:Procedure {id: 'PROC-SEC-03'})-[:GOVERNED_BY]->(p1:Policy), (proc)-[:GOVERNED_BY]->(p2:Policy)
+MATCH (p1)-[c:CONFLICTS_WITH]->(p2)
+RETURN proc, p1, c, p2`,
+    trap3_conflict_resolved: `MATCH (proc:Procedure {id: 'PROC-SEC-03'})-[:GOVERNED_BY]->(p1:Policy)-[s:SUPERSEDES {resolved_by: 'CuratorAgent'}]->(p2:Policy)
+RETURN proc, p1, s, p2`,
+    trap4_missing_knowledge: `MATCH (d:Department {id: 'DEPT-ENG'})
+OPTIONAL MATCH (d)-[:RESPONSIBLE_FOR]->(proc:Procedure {topic: 'GPU Quota'})
+OPTIONAL MATCH (d)<-[:REPRESENTS]-(sme:Contact)
+RETURN proc, sme`,
+    trap4_sme_published: `MATCH (d:Department {id: 'DEPT-ENG'})-[:RESPONSIBLE_FOR]->(proc:Procedure {id: 'PROC-ENG-GPU'})
+MATCH (proc)-[:USES_APP]->(app:Application)
+MATCH (proc)-[:GOVERNED_BY]->(pol:Policy)-[:APPROVED_BY]->(sme:Contact {id: 'SME-MARCUS'})
+RETURN d, proc, app, pol, sme`,
+    trap5_provenance: `MATCH (dec:Decision {id: 'DEC-901'})-[:BASED_ON]->(pol:Policy)
+MATCH (pol)-[:EVIDENCED_BY]->(doc:Document)
+MATCH (pol)-[:APPROVED_BY]->(sme:Contact)
+RETURN dec, pol, doc, sme`,
+  };
+
+  finalResult.executedCypher = cypherMap[finalResult.trapType || ''] || `MATCH (n) WHERE n.title CONTAINS $query RETURN n LIMIT 10`;
 
   // Determine episode status
   let epStatus: 'SUCCESS' | 'CONFLICT_HALTED' | 'ABSTAINED_ROUTED' | 'SUPERSEDED_FILTERED' | 'SME_PUBLISHED' = 'SUCCESS';

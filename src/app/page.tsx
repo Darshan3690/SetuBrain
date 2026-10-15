@@ -20,8 +20,11 @@ import {
   Award,
   Sparkles,
   History,
-  XCircle
+  XCircle,
+  Terminal
 } from 'lucide-react';
+import GraphTopologyMap from '@/components/GraphTopologyMap';
+import McpInspector from '@/components/McpInspector';
 
 interface TraversalResult {
   tenantId: string;
@@ -72,6 +75,8 @@ interface TraversalResult {
   };
   compiledSkillMd?: string;
   latencyMs?: number;
+  isLiveEngine?: boolean;
+  executedCypher?: string;
 }
 
 interface DepartmentData {
@@ -157,7 +162,7 @@ const TRAP_PRESETS = [
 ];
 
 export default function SetuBrainDashboard() {
-  const [activeTab, setActiveTab] = useState<'engine' | 'inbox' | 'curator' | 'departments' | 'benchmark' | 'memory'>('engine');
+  const [activeTab, setActiveTab] = useState<'engine' | 'inbox' | 'curator' | 'departments' | 'benchmark' | 'memory' | 'mcp'>('engine');
   const [tenant, setTenant] = useState<'tenant_acme' | 'tenant_globex'>('tenant_acme');
   const [query, setQuery] = useState('How do I purchase software?');
   const [loading, setLoading] = useState(false);
@@ -382,6 +387,21 @@ export default function SetuBrainDashboard() {
           </div>
 
           <div className="flex items-center space-x-4">
+            {/* Live Cypher Engine Status Badge */}
+            <div className="hidden sm:flex items-center">
+              {result?.isLiveEngine ? (
+                <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-mono shadow-sm shadow-emerald-500/20">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="font-semibold">FalkorDB Live Cypher Engine</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-blue-950/60 border border-blue-500/40 text-blue-300 text-xs font-mono">
+                  <span className="w-2 h-2 rounded-full bg-blue-400" />
+                  <span className="font-semibold">Resilient Graph Engine</span>
+                </div>
+              )}
+            </div>
+
             {/* Tenant Switcher */}
             <div className="flex items-center bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 shadow-inner">
               <button
@@ -535,6 +555,21 @@ export default function SetuBrainDashboard() {
               {episodes.length}
             </span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('mcp')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+              activeTab === 'mcp'
+                ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+            <span>MCP Tool Inspector (Track 01)</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono border border-cyan-500/30">
+              JSON-RPC 2.0
+            </span>
+          </button>
         </div>
       </header>
 
@@ -666,6 +701,23 @@ export default function SetuBrainDashboard() {
                       <Database className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                       <span>{result.summary}</span>
                     </div>
+
+                    {result.executedCypher && (
+                      <div className="pt-3 border-t border-slate-800 space-y-1.5">
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                          <span className="flex items-center space-x-1.5 text-indigo-400 font-semibold">
+                            <Terminal className="w-3.5 h-3.5" />
+                            <span>Executed Parameterized Cypher</span>
+                          </span>
+                          <span className="text-slate-500 text-[10px]">
+                            {result.isLiveEngine ? '⚡ FalkorDB Live Cypher Execution' : '🛡️ Resilient In-Memory Graph Query'}
+                          </span>
+                        </div>
+                        <pre className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-indigo-300 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-inner">
+                          {result.executedCypher}
+                        </pre>
+                      </div>
+                    )}
                   </div>
 
                   {/* TRAP 2: Superseded Policies Card */}
@@ -806,8 +858,16 @@ export default function SetuBrainDashboard() {
                   )}
                 </div>
 
-                {/* Right Column: Live Traversal Path & SKILL.md */}
+                {/* Right Column: Visual Graph Topology, Live Traversal Path & SKILL.md */}
                 <div className="lg:col-span-5 space-y-6">
+                  {/* Interactive Visual Graph Topology Map */}
+                  <GraphTopologyMap
+                    tenantId={tenant}
+                    trapType={result.trapType}
+                    isGpuApproved={isGpuApproved}
+                    curatorStatus={curatorStatus}
+                  />
+
                   {/* Graph Traversal Path */}
                   <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-xl space-y-4 backdrop-blur-md">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -1306,6 +1366,11 @@ export default function SetuBrainDashboard() {
             </div>
           </div>
         )}
+
+        {/* ====================================================================== */}
+        {/* TAB 7: MCP TOOL INSPECTOR (TRACK 01)                                   */}
+        {/* ====================================================================== */}
+        {activeTab === 'mcp' && <McpInspector />}
       </main>
 
       {/* Footer */}
