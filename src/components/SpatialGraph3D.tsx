@@ -223,6 +223,11 @@ export default function SpatialGraph3D({
 
         if (isCancelled || !containerRef.current) return;
 
+        if (graphInstanceRef.current && graphInstanceRef.current._destructor) {
+          graphInstanceRef.current._destructor();
+          graphInstanceRef.current = null;
+        }
+
         // Safely clear any leftover raw DOM canvas nodes
         while (containerRef.current.firstChild) {
           containerRef.current.removeChild(containerRef.current.firstChild);

@@ -1,0 +1,237 @@
+'use client';
+
+import React, { useState } from 'react';
+import { GitBranch, Shield, Zap, Terminal, Building2, ChevronDown, Menu, X, ExternalLink } from 'lucide-react';
+import { useUser, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
+
+interface LandingNavbarProps {
+  onLaunchConsole: () => void;
+  activeTenant?: string;
+  onSelectTenant?: (tenant: string) => void;
+}
+
+export default function LandingNavbar({
+  onLaunchConsole,
+  activeTenant = 'tenant_acme',
+  onSelectTenant,
+}: LandingNavbarProps) {
+  const { isSignedIn, user } = useUser();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [tenantDropdownOpen, setTenantDropdownOpen] = useState(false);
+
+  return (
+    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#030712]/80 border-b border-white/10 transition-all">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4">
+        {/* Left: Brand & FalkorDB Badge */}
+        <div className="flex items-center space-x-3.5">
+          <a href="#" className="flex items-center space-x-3 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-cyan-400 p-[1px] shadow-lg shadow-sky-500/20 group-hover:shadow-sky-500/40 transition-all">
+              <div className="w-full h-full bg-[#030712] rounded-[11px] flex items-center justify-center">
+                <GitBranch className="w-5 h-5 text-sky-400" />
+              </div>
+            </div>
+            <div className="flex items-baseline space-x-2">
+              <span className="text-xl font-bold tracking-tight text-white font-sans">
+                SetuBrain
+              </span>
+              <span className="text-sm font-medium text-sky-400 font-sans">
+                सेतु
+              </span>
+            </div>
+          </a>
+
+          <div className="hidden sm:inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs font-mono font-medium">
+            <Zap className="w-3 h-3 text-cyan-400 fill-cyan-400" />
+            <span>FalkorDB Powered</span>
+          </div>
+        </div>
+
+        {/* Center: Navigation Links */}
+        <nav className="hidden lg:flex items-center space-x-7 text-xs font-medium text-slate-300">
+          <a
+            href="#architecture"
+            className="hover:text-white transition-colors py-1"
+          >
+            Architecture
+          </a>
+          <a
+            href="#comparison"
+            className="hover:text-white transition-colors py-1"
+          >
+            Vector vs Graph
+          </a>
+          <a
+            href="#traps"
+            className="hover:text-white transition-colors py-1"
+          >
+            The 5 Traps
+          </a>
+          <a
+            href="#skill-compiler"
+            className="hover:text-white transition-colors py-1"
+          >
+            SKILL.md Compiler
+          </a>
+          <a
+            href="#mcp"
+            className="hover:text-white transition-colors py-1"
+          >
+            MCP Server
+          </a>
+          <a
+            href="#benchmark"
+            className="hover:text-white transition-colors py-1"
+          >
+            Benchmark
+          </a>
+        </nav>
+
+        {/* Right: Tenant, Auth & Launch Console CTA */}
+        <div className="hidden md:flex items-center space-x-3.5">
+          {/* Tenant Selector */}
+          <div className="relative">
+            <button
+              onClick={() => setTenantDropdownOpen(!tenantDropdownOpen)}
+              className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-white/10 text-xs font-mono text-slate-300 hover:text-white hover:border-white/20 transition-all cursor-pointer"
+            >
+              <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{activeTenant}</span>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
+            {tenantDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[#080D18] border border-white/10 shadow-2xl p-1 z-50 text-xs font-mono">
+                <button
+                  onClick={() => {
+                    if (onSelectTenant) onSelectTenant('tenant_acme');
+                    setTenantDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
+                    activeTenant === 'tenant_acme'
+                      ? 'bg-sky-500/20 text-sky-300 font-semibold'
+                      : 'text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  Acme Corp (tenant_acme)
+                </button>
+                <button
+                  onClick={() => {
+                    if (onSelectTenant) onSelectTenant('tenant_globex');
+                    setTenantDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
+                    activeTenant === 'tenant_globex'
+                      ? 'bg-purple-500/20 text-purple-300 font-semibold'
+                      : 'text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  Globex Inc (tenant_globex)
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Auth Controls */}
+          {!isSignedIn ? (
+            <SignInButton mode="modal">
+              <button className="px-3.5 py-1.5 text-xs font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/80 border border-white/10 transition-all cursor-pointer">
+                Sign In
+              </button>
+            </SignInButton>
+          ) : (
+            <div className="flex items-center space-x-2 pl-1">
+              <span className="text-[11px] font-mono text-emerald-400 hidden xl:inline">
+                ● RBAC Active
+              </span>
+              <UserButton />
+            </div>
+          )}
+
+          {/* Launch Console CTA */}
+          <button
+            onClick={onLaunchConsole}
+            className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-sky-500/25 hover:shadow-cyan-400/40 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <span>Launch Console</span>
+            <span className="text-xs">→</span>
+          </button>
+        </div>
+
+        {/* Mobile Hamburger Button */}
+        <div className="flex md:hidden items-center space-x-2">
+          <button
+            onClick={onLaunchConsole}
+            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 text-slate-950 font-bold text-xs"
+          >
+            Console
+          </button>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 rounded-lg text-slate-400 hover:text-white bg-slate-900 border border-white/10"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-b border-white/10 bg-[#030712] px-6 py-4 space-y-3 text-xs font-medium text-slate-300">
+          <a
+            href="#architecture"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 hover:text-white"
+          >
+            Architecture
+          </a>
+          <a
+            href="#comparison"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 hover:text-white"
+          >
+            Vector vs Graph
+          </a>
+          <a
+            href="#traps"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 hover:text-white"
+          >
+            The 5 Traps
+          </a>
+          <a
+            href="#skill-compiler"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 hover:text-white"
+          >
+            SKILL.md Compiler
+          </a>
+          <a
+            href="#mcp"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 hover:text-white"
+          >
+            MCP Server
+          </a>
+          <a
+            href="#benchmark"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 hover:text-white"
+          >
+            Benchmark
+          </a>
+          <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+            <span className="text-slate-400 font-mono">Tenant: {activeTenant}</span>
+            {!isSignedIn ? (
+              <SignInButton mode="modal">
+                <button className="px-3 py-1 rounded-lg bg-slate-800 text-white">
+                  Sign In
+                </button>
+              </SignInButton>
+            ) : (
+              <UserButton />
+            )}
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
