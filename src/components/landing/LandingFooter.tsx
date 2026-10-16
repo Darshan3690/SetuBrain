@@ -69,7 +69,7 @@ export default function LandingFooter({ onLaunchConsole }: { onLaunchConsole: ()
           {/* Attribution & Disclosure */}
           <div className="text-center md:text-right space-y-1">
             <p className="text-[11px] text-slate-400 font-mono">
-              Created by <strong className="text-white">Darshan Sharma</strong> for WeMakeDevs FalkorDB Hackathon 2026.
+              Created by <strong className="text-white">Darshan Rajput</strong> for WeMakeDevs FalkorDB Hackathon 2026.
             </p>
             <p className="text-[10px] text-slate-500">
               MIT License • AI-assisted frontend with human system architecture & Cypher verification.

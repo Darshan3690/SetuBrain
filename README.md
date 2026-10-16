@@ -218,7 +218,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 *In accordance with the WeMakeDevs hackathon guidelines and transparency standards:*
 
-- **Human Architect**: Darshan Sharma (System architecture, multi-tenant Cypher schemas, 5 deliberate enterprise traps, benchmark test cases, and domain logic).
+- **Human Architect**: Darshan Rajput (System architecture, multi-tenant Cypher schemas, 5 deliberate enterprise traps, benchmark test cases, and domain logic).
 - **AI Coding Assistant**: Google Antigravity IDE (Gemini 2.5 Flash / Gemini 2.5 Pro) with Gravitas verification runtime.
 - **Assistance Areas**: Next.js 15 App Router boilerplate, SVG topology coordinate calculations, Lucide React icons, and JSON-RPC 2.0 serialization for MCP.
 - **Verification**: 100% of Cypher schemas, traversal logic, multi-tenant boundary checks, and API endpoints were verified via end-to-end integration tests and browser automated testing.
