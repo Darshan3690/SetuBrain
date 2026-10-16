@@ -144,39 +144,58 @@ export default function GraphTopologyMap({ tenantId, trapType, isGpuApproved, cu
   };
 
   return (
-    <div className="rounded-3xl bg-slate-900/60 border border-slate-800 shadow-xl p-5 space-y-3 backdrop-blur-md relative overflow-hidden">
+    <div className="rounded-3xl bg-slate-900/70 border border-slate-800 shadow-xl p-5 space-y-3.5 backdrop-blur-md relative overflow-hidden">
       {/* Topology Header */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800/80 gap-2">
         <div className="flex items-center space-x-2">
-          <Network className="w-4 h-4 text-indigo-400" />
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+          <Network className="w-4 h-4 text-indigo-400 shrink-0" />
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
             FalkorDB Visual Topology Map ({nodes.length} Nodes, {edges.length} Edges)
           </span>
         </div>
 
-        <div className="flex items-center space-x-2">
+        {/* Aligned Controls */}
+        <div className="flex items-center space-x-1.5 self-end sm:self-auto bg-slate-950/60 p-1 rounded-xl border border-slate-800">
           <button
             onClick={() => setZoom(z => Math.min(1.4, z + 0.1))}
-            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs"
+            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition-all cursor-pointer"
             title="Zoom In"
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => setZoom(z => Math.max(0.7, z - 0.1))}
-            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs"
+            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition-all cursor-pointer"
             title="Zoom Out"
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => { setZoom(1); setSelectedNode(null); }}
-            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs"
+            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition-all cursor-pointer"
             title="Reset View"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
         </div>
+      </div>
+
+      {/* Explicit Top Legend Bar - Prevents Canvas Collisions */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 px-3.5 py-2 rounded-xl bg-slate-950/70 border border-slate-800/80 text-xs font-mono shadow-inner">
+        <div className="flex flex-wrap items-center gap-3.5">
+          <span className="flex items-center gap-1.5 text-slate-300">
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/50 inline-block" />
+            <span>Active Traversal</span>
+          </span>
+          <span className="flex items-center gap-1.5 text-slate-300">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50 inline-block" />
+            <span>Conflict / Superseded</span>
+          </span>
+        </div>
+        <span className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+          <Info className="w-3.5 h-3.5 text-indigo-400" />
+          <span>Click any node to inspect</span>
+        </span>
       </div>
 
       {/* SVG Canvas */}
@@ -336,23 +355,6 @@ export default function GraphTopologyMap({ tenantId, trapType, isGpuApproved, cu
             </button>
           </div>
         )}
-      </div>
-
-      <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 font-mono">
-        <div className="flex items-center space-x-3">
-          <span className="flex items-center space-x-1">
-            <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block" />
-            <span>Active Traversal</span>
-          </span>
-          <span className="flex items-center space-x-1">
-            <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
-            <span>Conflict / Superseded</span>
-          </span>
-        </div>
-        <span className="flex items-center space-x-1 text-slate-500">
-          <Info className="w-3 h-3" />
-          <span>Click any node to inspect properties</span>
-        </span>
       </div>
     </div>
   );

@@ -170,6 +170,62 @@ const TRAP_PRESETS = [
   }
 ];
 
+function renderHighlightedCypher(cypher: string) {
+  const lines = cypher.split('\n');
+  return (
+    <div className="space-y-1 font-mono text-xs leading-relaxed select-all">
+      {lines.map((line, lIdx) => {
+        const tokens = line.split(/(\b(?:MATCH|OPTIONAL MATCH|WHERE|RETURN|WITH|ORDER BY|LIMIT|CREATE|SET|AND|OR|AS|GROUP BY|DESC|ASC|IN)\b|:\w+|\[:[A-Za-z0-9_]+\]|\$[A-Za-z0-9_]+|'[^']*'|"[^"]*"|\(|\)|-[^->]*-?>|<-?[^-]*-)/g);
+        return (
+          <div key={lIdx}>
+            {tokens.map((token, tIdx) => {
+              if (/^(MATCH|OPTIONAL MATCH|WHERE|RETURN|WITH|ORDER BY|LIMIT|CREATE|SET|AND|OR|AS|GROUP BY|DESC|ASC|IN)$/.test(token)) {
+                return <span key={tIdx} className="text-purple-400 font-bold">{token}</span>;
+              }
+              if (token.startsWith(':') && !token.startsWith('::')) {
+                return <span key={tIdx} className="text-sky-300 font-semibold">{token}</span>;
+              }
+              if (token.startsWith('[:') || token.startsWith('-[')) {
+                return <span key={tIdx} className="text-emerald-400 font-semibold">{token}</span>;
+              }
+              if (token.startsWith('$')) {
+                return <span key={tIdx} className="text-amber-300 font-semibold">{token}</span>;
+              }
+              if ((token.startsWith("'") && token.endsWith("'")) || (token.startsWith('"') && token.endsWith('"'))) {
+                return <span key={tIdx} className="text-emerald-300">{token}</span>;
+              }
+              if (token === '(' || token === ')' || token === '{' || token === '}') {
+                return <span key={tIdx} className="text-slate-400 font-bold">{token}</span>;
+              }
+              if (token.includes('->') || token.includes('<-')) {
+                return <span key={tIdx} className="text-emerald-400 font-semibold">{token}</span>;
+              }
+              return <span key={tIdx} className="text-slate-200">{token}</span>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function renderHighlightedHop(hop: string) {
+  const parts = hop.split(/(\([^)]+\)|-\[[^\]]+\]->|<-?\[[^\]]+\]-?|-+>|<+-)/g);
+  return (
+    <span className="font-mono text-xs leading-relaxed">
+      {parts.map((part, pIdx) => {
+        if (part.startsWith('(') && part.endsWith(')')) {
+          return <span key={pIdx} className="text-sky-300 font-semibold">{part}</span>;
+        }
+        if (part.includes('[') || part.includes('->') || part.includes('<-')) {
+          return <span key={pIdx} className="text-emerald-400 font-semibold mx-1">{part}</span>;
+        }
+        return <span key={pIdx} className="text-slate-200">{part}</span>;
+      })}
+    </span>
+  );
+}
+
 export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?: () => void }) {
   const { isSignedIn } = useUser();
   const [activeTab, setActiveTab] = useState<'engine' | 'inbox' | 'curator' | 'departments' | 'benchmark' | 'memory' | 'mcp'>('engine');
@@ -348,6 +404,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
     };
 
     initData();
+
     return () => {
       isMounted = false;
     };
@@ -371,52 +428,52 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
         </div>
       )}
 
-      {/* Top Header */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <GitBranch className="w-6 h-6 text-white" />
+      {/* Top Header - Responsive and Non-squashing */}
+      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 transition-all">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 min-h-[4.5rem] flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0">
+              <GitBranch className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-2xl font-black tracking-tight text-white">SetuBrain</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xl sm:text-2xl font-black tracking-tight text-white">SetuBrain</span>
                 {onBackToLanding && (
                   <button
                     onClick={onBackToLanding}
-                    className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/20 font-mono transition-all ml-2 cursor-pointer"
+                    className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/20 font-mono transition-all ml-1 cursor-pointer shadow-sm hover:brightness-110 active:scale-95"
                   >
                     ← Landing Page
                   </button>
                 )}
-                <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">
+                <span className="hidden sm:inline-flex text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">
                   सेतु • The Bridge
                 </span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                <span className="hidden md:inline-flex text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
                   FalkorDB Powered
                 </span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">
+                <span className="hidden lg:inline-flex text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">
                   YC Company Brain RFS
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="hidden sm:block text-xs text-slate-400 mt-0.5 line-clamp-1">
                 The Graph-Powered Bridge Between Scattered Company Knowledge and Reliable AI Execution
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
             {/* Live Cypher Engine Status Badge */}
             <div className="hidden sm:flex items-center">
               {result?.isLiveEngine ? (
                 <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-mono shadow-sm shadow-emerald-500/20">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="font-semibold">FalkorDB Live Cypher Engine</span>
+                  <span className="font-semibold">FalkorDB Live Cypher</span>
                 </div>
               ) : (
                 <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-blue-950/60 border border-blue-500/40 text-blue-300 text-xs font-mono">
                   <span className="w-2 h-2 rounded-full bg-blue-400" />
-                  <span className="font-semibold">Resilient Graph Engine</span>
+                  <span className="font-semibold">Resilient Engine</span>
                 </div>
               )}
             </div>
@@ -429,7 +486,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                   handleRunQuery(query, 'tenant_acme');
                   refreshAuxiliaryData();
                 }}
-                className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   tenant === 'tenant_acme'
                     ? 'bg-indigo-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-slate-200'
@@ -444,7 +501,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                   handleRunQuery(query, 'tenant_globex');
                   refreshAuxiliaryData();
                 }}
-                className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   tenant === 'tenant_globex'
                     ? 'bg-purple-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-slate-200'
@@ -459,7 +516,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
             <button
               onClick={handleSeed}
               disabled={seeding}
-              className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-200 transition-all hover:border-slate-600 shadow-sm disabled:opacity-50"
+              className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-200 transition-all hover:border-slate-600 shadow-sm disabled:opacity-50 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${seeding ? 'animate-spin text-indigo-400' : 'text-slate-400'}`} />
               <span>{seeding ? 'Resetting...' : 'Reset Graph'}</span>
@@ -470,12 +527,12 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
               {!isSignedIn ? (
                 <>
                   <SignInButton mode="modal">
-                    <button className="px-3.5 py-1.5 text-xs font-medium rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition-all cursor-pointer">
+                    <button className="px-3 py-1.5 text-xs font-medium rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition-all cursor-pointer">
                       Sign In
                     </button>
                   </SignInButton>
                   <SignUpButton mode="modal">
-                    <button className="px-3.5 py-1.5 text-xs font-medium rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/25 transition-all cursor-pointer">
+                    <button className="px-3 py-1.5 text-xs font-medium rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/25 hover:brightness-110 active:scale-95 transition-all cursor-pointer">
                       Get Started
                     </button>
                   </SignUpButton>
@@ -487,11 +544,11 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
           </div>
         </div>
 
-        {/* Feature Navigation Tabs */}
-        <div className="max-w-7xl mx-auto px-6 flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none border-t border-slate-800/40 pt-2">
+        {/* Feature Navigation Tabs - Overflow Scrolling Gracefully without Boundary Breaking */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-2 overflow-x-auto pb-2.5 pt-2 scrollbar-none border-t border-slate-800/40 w-full flex-nowrap">
           <button
             onClick={() => setActiveTab('engine')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+            className={`shrink-0 whitespace-nowrap inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'engine'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -506,7 +563,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
               setActiveTab('inbox');
               refreshAuxiliaryData();
             }}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+            className={`shrink-0 whitespace-nowrap inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'inbox'
                 ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -515,9 +572,9 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
             <Inbox className="w-3.5 h-3.5" />
             <span>SME Expert Inbox</span>
             {isGpuApproved ? (
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="w-2 h-2 rounded-full bg-emerald-400 ml-1" />
             ) : (
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono border border-amber-500/30">
+              <span className="ml-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono border border-amber-500/30">
                 1 Pending
               </span>
             )}
@@ -528,7 +585,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
               setActiveTab('curator');
               refreshAuxiliaryData();
             }}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+            className={`shrink-0 whitespace-nowrap inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'curator'
                 ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -537,11 +594,11 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Curator Agent</span>
             {curatorStatus === 'RESOLVED' ? (
-              <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">
+              <span className="ml-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono border border-emerald-500/30">
                 Resolved
               </span>
             ) : (
-              <span className="px-1.5 py-0.2 rounded-full bg-red-500/20 text-red-300 text-[10px] font-mono border border-red-500/30">
+              <span className="ml-1 px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px] font-mono border border-red-500/30">
                 1 Conflict
               </span>
             )}
@@ -552,7 +609,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
               setActiveTab('departments');
               refreshAuxiliaryData();
             }}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+            className={`shrink-0 whitespace-nowrap inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'departments'
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -564,7 +621,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
 
           <button
             onClick={() => setActiveTab('benchmark')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+            className={`shrink-0 whitespace-nowrap inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'benchmark'
                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -572,7 +629,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
           >
             <Award className="w-3.5 h-3.5" />
             <span>15-Query Benchmark</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">
+            <span className="ml-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono border border-emerald-500/30">
               100% vs 26.7%
             </span>
           </button>
@@ -582,7 +639,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
               setActiveTab('memory');
               refreshAuxiliaryData();
             }}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+            className={`shrink-0 whitespace-nowrap inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'memory'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -590,14 +647,14 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
           >
             <History className="w-3.5 h-3.5" />
             <span>Episodic Memory</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">
+            <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono border border-slate-700">
               {episodes.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('mcp')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+            className={`shrink-0 whitespace-nowrap inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
               activeTab === 'mcp'
                 ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -605,7 +662,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
           >
             <Terminal className="w-3.5 h-3.5 text-cyan-400" />
             <span>MCP Tool Inspector (Track 01)</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono border border-cyan-500/30">
+            <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono border border-cyan-500/30">
               JSON-RPC 2.0
             </span>
           </button>
@@ -688,8 +745,8 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
               </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="flex items-center gap-3">
+            {/* Search Bar - Responsive on Mobile */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
@@ -704,7 +761,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
               <button
                 onClick={() => handleRunQuery()}
                 disabled={loading}
-                className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-sm font-semibold shadow-lg shadow-indigo-600/30 transition-all flex items-center space-x-2 disabled:opacity-50"
+                className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl text-sm font-semibold shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer shrink-0"
               >
                 {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>Query Graph</span>}
               </button>
@@ -744,7 +801,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                     </div>
 
                     {result.executedCypher && (
-                      <div className="pt-3 border-t border-white/10 space-y-2">
+                      <div className="pt-3 border-t border-white/10 space-y-2.5">
                         <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
                           <div className="flex items-center space-x-2">
                             <div className="flex items-center space-x-1.5 pr-2 border-r border-slate-700/60">
@@ -761,9 +818,10 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                             {result.isLiveEngine ? '⚡ FalkorDB Live Cypher Execution' : '🛡️ Resilient In-Memory Graph Query'}
                           </span>
                         </div>
-                        <pre className="bg-slate-950/90 p-4 rounded-2xl border border-white/10 text-cyan-300 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap leading-relaxed shadow-inner">
-                          {result.executedCypher}
-                        </pre>
+                        {/* High-Contrast Syntax Highlighted Box */}
+                        <div className="bg-slate-950/95 p-4 rounded-2xl border border-white/10 overflow-x-auto shadow-inner text-xs">
+                          {renderHighlightedCypher(result.executedCypher)}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -825,7 +883,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                                 setActiveTab('curator');
                                 refreshAuxiliaryData();
                               }}
-                              className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-medium transition-all"
+                              className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-lg shadow-red-600/30 hover:shadow-red-500/50 hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
                             >
                               Open Curator Resolution Panel →
                             </button>
@@ -870,7 +928,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                                 setActiveTab('inbox');
                                 refreshAuxiliaryData();
                               }}
-                              className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium transition-all"
+                              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 hover:shadow-purple-500/50 hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
                             >
                               Open SME Inbox →
                             </button>
@@ -962,7 +1020,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                     />
                   )}
 
-                  {/* Graph Traversal Path */}
+                  {/* Graph Traversal Path - High Contrast Monospace Box */}
                   <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-xl space-y-4 backdrop-blur-md">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                       <div className="flex items-center space-x-2">
@@ -977,11 +1035,11 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                     <div className="space-y-2.5">
                       {result.graphTraversalPath.map((step, idx) => (
                         <div key={idx} className="flex items-start space-x-3 text-xs">
-                          <div className="w-5 h-5 rounded-full bg-indigo-950 text-indigo-400 border border-indigo-800/60 flex items-center justify-center shrink-0 text-[10px] font-mono mt-0.5">
+                          <div className="w-5 h-5 rounded-full bg-indigo-950 text-indigo-400 border border-indigo-700/60 flex items-center justify-center shrink-0 text-[10px] font-mono mt-0.5 font-bold shadow-sm shadow-indigo-500/20">
                             {idx + 1}
                           </div>
-                          <div className="bg-slate-950/70 px-3 py-2 rounded-xl border border-slate-800/80 text-slate-200 font-mono text-[11px] flex-1 break-all">
-                            {step}
+                          <div className="bg-slate-950/90 px-3.5 py-2.5 rounded-xl border border-slate-800/90 text-slate-100 font-mono text-xs flex-1 break-all leading-relaxed shadow-inner">
+                            {renderHighlightedHop(step)}
                           </div>
                         </div>
                       ))}
@@ -1081,7 +1139,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
                 <div className="text-xs text-slate-400">
                   {isGpuApproved ? (
                     <span className="text-emerald-400 flex items-center space-x-1 font-semibold">
@@ -1093,12 +1151,12 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                   )}
                 </div>
 
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 w-full sm:w-auto justify-end">
                   {!isGpuApproved ? (
                     <button
                       onClick={handleApproveGpuProcedure}
                       disabled={loading}
-                      className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 transition-all flex items-center space-x-2"
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-lg shadow-purple-600/30 hover:shadow-purple-500/50 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 cursor-pointer"
                     >
                       <Check className="w-4 h-4" />
                       <span>Approve & Publish GPU Procedure to Graph as Marcus Vance</span>
@@ -1110,7 +1168,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                         setQuery('What is my GPU cluster quota in Engineering?');
                         handleRunQuery('What is my GPU cluster quota in Engineering?');
                       }}
-                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/30 transition-all flex items-center space-x-2"
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/30 hover:shadow-emerald-500/50 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 cursor-pointer"
                     >
                       <Sparkles className="w-4 h-4" />
                       <span>Test GPU Cluster Quota in Engine →</span>
@@ -1190,7 +1248,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
               </div>
 
               {/* Resolution Action */}
-              <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-slate-800/80">
                 <div className="text-xs text-slate-400">
                   {curatorStatus === 'RESOLVED' ? (
                     <span className="text-emerald-400 font-semibold flex items-center space-x-1">
@@ -1202,12 +1260,12 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                   )}
                 </div>
 
-                <div>
+                <div className="w-full sm:w-auto flex justify-end">
                   {curatorStatus === 'DETECTED' ? (
                     <button
                       onClick={handleResolveConflict}
                       disabled={loading}
-                      className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-lg shadow-red-600/30 transition-all flex items-center space-x-2"
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-lg shadow-red-600/30 hover:shadow-red-500/50 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 cursor-pointer"
                     >
                       <ShieldCheck className="w-4 h-4" />
                       <span>Resolve Conflict (Enforce Security Zero-Trust Precedence)</span>
@@ -1219,7 +1277,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                         setQuery('How do we handle laptop wipe on offboarding?');
                         handleRunQuery('How do we handle laptop wipe on offboarding?');
                       }}
-                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/30 transition-all flex items-center space-x-2"
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/30 hover:shadow-emerald-500/50 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 cursor-pointer"
                     >
                       <span>Test Resolved Laptop Wipe in Engine →</span>
                     </button>

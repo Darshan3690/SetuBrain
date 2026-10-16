@@ -3,6 +3,48 @@
 import React, { useState } from 'react';
 import { Database, GitBranch, ArrowRight, Copy, Check, ShieldCheck, Terminal, Layers } from 'lucide-react';
 
+function renderHighlightedCypher(cypher: string) {
+  const lines = cypher.split('\n');
+  return (
+    <div className="space-y-1 font-mono text-xs leading-relaxed select-all">
+      {lines.map((line, lIdx) => {
+        if (line.trim().startsWith('//')) {
+          return <div key={lIdx} className="text-slate-500 italic">{line}</div>;
+        }
+        const tokens = line.split(/(\b(?:MATCH|OPTIONAL MATCH|WHERE|RETURN|WITH|ORDER BY|LIMIT|CREATE|SET|AND|OR|AS|GROUP BY|DESC|ASC|IN)\b|:\w+|\[:[A-Za-z0-9_]+\]|\$[A-Za-z0-9_]+|'[^']*'|"[^"]*"|\(|\)|-[^->]*-?>|<-?[^-]*-)/g);
+        return (
+          <div key={lIdx}>
+            {tokens.map((token, tIdx) => {
+              if (/^(MATCH|OPTIONAL MATCH|WHERE|RETURN|WITH|ORDER BY|LIMIT|CREATE|SET|AND|OR|AS|GROUP BY|DESC|ASC|IN)$/.test(token)) {
+                return <span key={tIdx} className="text-purple-400 font-bold">{token}</span>;
+              }
+              if (token.startsWith(':') && !token.startsWith('::')) {
+                return <span key={tIdx} className="text-sky-300 font-semibold">{token}</span>;
+              }
+              if (token.startsWith('[:') || token.startsWith('-[')) {
+                return <span key={tIdx} className="text-emerald-400 font-semibold">{token}</span>;
+              }
+              if (token.startsWith('$')) {
+                return <span key={tIdx} className="text-amber-300 font-semibold">{token}</span>;
+              }
+              if ((token.startsWith("'") && token.endsWith("'")) || (token.startsWith('"') && token.endsWith('"'))) {
+                return <span key={tIdx} className="text-emerald-300">{token}</span>;
+              }
+              if (token === '(' || token === ')' || token === '{' || token === '}') {
+                return <span key={tIdx} className="text-slate-400 font-bold">{token}</span>;
+              }
+              if (token.includes('->') || token.includes('<-')) {
+                return <span key={tIdx} className="text-emerald-400 font-semibold">{token}</span>;
+              }
+              return <span key={tIdx} className="text-slate-200">{token}</span>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function FalkorArchitecture() {
   const [copied, setCopied] = useState(false);
 
@@ -113,8 +155,8 @@ RETURN d.name AS department,
             </div>
 
             {/* Code Body */}
-            <div className="p-5 overflow-x-auto text-xs font-mono leading-relaxed text-slate-300 select-all">
-              <pre>{sampleCypher}</pre>
+            <div className="p-5 overflow-x-auto text-xs font-mono leading-relaxed select-all">
+              {renderHighlightedCypher(sampleCypher)}
             </div>
           </div>
 

@@ -26,6 +26,45 @@ interface Scenario {
   status: 'VERIFIED' | 'STALE' | 'CONFLICT' | 'ABSTAIN';
 }
 
+function renderHighlightedCypher(cypher: string) {
+  const lines = cypher.split('\n');
+  return (
+    <div className="space-y-1 font-mono text-xs leading-relaxed select-all">
+      {lines.map((line, lIdx) => {
+        const tokens = line.split(/(\b(?:MATCH|OPTIONAL MATCH|WHERE|RETURN|WITH|ORDER BY|LIMIT|CREATE|SET|AND|OR|AS|GROUP BY|DESC|ASC|IN)\b|:\w+|\[:[A-Za-z0-9_]+\]|\$[A-Za-z0-9_]+|'[^']*'|"[^"]*"|\(|\)|-[^->]*-?>|<-?[^-]*-)/g);
+        return (
+          <div key={lIdx}>
+            {tokens.map((token, tIdx) => {
+              if (/^(MATCH|OPTIONAL MATCH|WHERE|RETURN|WITH|ORDER BY|LIMIT|CREATE|SET|AND|OR|AS|GROUP BY|DESC|ASC|IN)$/.test(token)) {
+                return <span key={tIdx} className="text-purple-400 font-bold">{token}</span>;
+              }
+              if (token.startsWith(':') && !token.startsWith('::')) {
+                return <span key={tIdx} className="text-sky-300 font-semibold">{token}</span>;
+              }
+              if (token.startsWith('[:') || token.startsWith('-[')) {
+                return <span key={tIdx} className="text-emerald-400 font-semibold">{token}</span>;
+              }
+              if (token.startsWith('$')) {
+                return <span key={tIdx} className="text-amber-300 font-semibold">{token}</span>;
+              }
+              if ((token.startsWith("'") && token.endsWith("'")) || (token.startsWith('"') && token.endsWith('"'))) {
+                return <span key={tIdx} className="text-emerald-300">{token}</span>;
+              }
+              if (token === '(' || token === ')' || token === '{' || token === '}') {
+                return <span key={tIdx} className="text-slate-400 font-bold">{token}</span>;
+              }
+              if (token.includes('->') || token.includes('<-')) {
+                return <span key={tIdx} className="text-emerald-400 font-semibold">{token}</span>;
+              }
+              return <span key={tIdx} className="text-slate-200">{token}</span>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const SCENARIOS: Scenario[] = [
   {
     id: 'trap1',
@@ -222,14 +261,19 @@ export default function EnterpriseTrapLab({ onLaunchConsole }: { onLaunchConsole
             </div>
 
             {/* FalkorDB Cypher Query Snippet */}
-            <div className="p-4 rounded-2xl bg-slate-950/90 border border-white/10 space-y-2 font-mono text-xs">
+            <div className="p-4 rounded-2xl bg-slate-950/95 border border-white/10 space-y-2 font-mono text-xs shadow-inner">
               <div className="text-[11px] text-slate-400 flex items-center justify-between">
-                <span>FALKORDB OPENCYPHER QUERY:</span>
-                <span className="text-cyan-400 text-[10px]">14.3 ms execution</span>
+                <span className="text-indigo-300 font-semibold flex items-center gap-1.5">
+                  <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>FALKORDB OPENCYPHER QUERY:</span>
+                </span>
+                <span className="text-cyan-400 text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-white/5">
+                  14.3 ms execution
+                </span>
               </div>
-              <pre className="text-[11px] text-slate-300 overflow-x-auto p-2.5 rounded-xl bg-black/40 border border-white/5 leading-relaxed font-mono select-all">
-                {selectedTrap.cypher}
-              </pre>
+              <div className="overflow-x-auto p-3 rounded-xl bg-black/50 border border-white/5">
+                {renderHighlightedCypher(selectedTrap.cypher)}
+              </div>
             </div>
 
             {/* Governed Outcome Box */}

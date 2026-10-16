@@ -67,20 +67,20 @@ export default function DashboardRoleBanner({ onRoleChange }: { onRoleChange?: (
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto justify-end">
         {isSignedIn ? (
-          <div className="flex items-center space-x-2 bg-slate-800/80 p-1.5 rounded-xl border border-slate-700/60 text-xs">
-            <span className="text-[11px] text-slate-400 font-mono pl-1 hidden sm:inline">Switch Role:</span>
-            <div className="flex items-center space-x-1">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-800/80 p-2 rounded-2xl border border-slate-700/60 text-xs w-full sm:w-auto shadow-inner">
+            <span className="text-[11px] text-slate-400 font-mono pl-1 whitespace-nowrap">Switch Role:</span>
+            <div className="grid grid-cols-2 sm:flex sm:flex-row gap-1 bg-slate-950/70 p-1 rounded-xl border border-white/5">
               {ROLES.map((r) => (
                 <button
                   key={r.id}
                   onClick={() => handleRoleSelect(r.id)}
                   disabled={updating}
-                  className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-medium transition-all ${
+                  className={`px-2.5 py-1.5 rounded-lg font-mono text-[11px] font-medium text-center transition-all cursor-pointer ${
                     currentRole === r.id
-                      ? `${r.color} border shadow-sm font-bold`
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+                      ? `${r.color} border shadow-md font-bold`
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }`}
                   title={`Switch active role to ${r.label}`}
                 >
@@ -91,25 +91,28 @@ export default function DashboardRoleBanner({ onRoleChange }: { onRoleChange?: (
           </div>
         ) : (
           <SignInButton mode="modal">
-            <button className="flex items-center space-x-1.5 px-3.5 py-1.5 text-xs font-medium rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 transition-all cursor-pointer">
+            <button className="flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer">
               <KeyRound className="w-3.5 h-3.5" />
               <span>Sign In for RBAC Access</span>
             </button>
           </SignInButton>
         )}
 
-        {currentRole === 'DEPARTMENT_SME' && (
-          <span className="flex items-center space-x-1 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-medium">
-            <CheckCircle className="w-3.5 h-3.5" />
-            <span>SME Inbox Unlocked</span>
-          </span>
-        )}
-        {currentRole === 'COMPANY_ADMINISTRATOR' && (
-          <span className="flex items-center space-x-1 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-mono font-medium">
-            <CheckCircle className="w-3.5 h-3.5" />
-            <span>SuperAdmin Access</span>
-          </span>
-        )}
+        {/* Cohesive Identity Block Badges */}
+        <div className="flex items-center gap-2 shrink-0">
+          {currentRole === 'DEPARTMENT_SME' && (
+            <span className="px-2.5 py-1.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs rounded-xl font-mono flex items-center gap-1.5 font-medium shadow-sm">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+              <span>SME Inbox Unlocked</span>
+            </span>
+          )}
+          {currentRole === 'COMPANY_ADMINISTRATOR' && (
+            <span className="px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs rounded-xl font-mono flex items-center gap-1.5 font-medium shadow-sm">
+              <CheckCircle className="w-3.5 h-3.5 text-amber-400" />
+              <span>SuperAdmin Access</span>
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
