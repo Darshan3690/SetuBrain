@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { GitBranch, Shield, Zap, Terminal, Building2, ChevronDown, Menu, X, ExternalLink } from 'lucide-react';
-import { useUser, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
+import { GitBranch, Zap, Building2, ChevronDown, Menu, X } from 'lucide-react';
+import { useUser, SignInButton, UserButton } from '@clerk/nextjs';
 
 interface LandingNavbarProps {
   onLaunchConsole: () => void;
@@ -15,13 +15,13 @@ export default function LandingNavbar({
   activeTenant = 'tenant_acme',
   onSelectTenant,
 }: LandingNavbarProps) {
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [tenantDropdownOpen, setTenantDropdownOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#030712]/80 border-b border-white/10 transition-all">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#060608]/85 border-b border-white/[0.08] transition-all">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
         {/* Left: Brand & FalkorDB Badge */}
         <div className="flex items-center space-x-3.5">
           <a href="#" className="flex items-center space-x-3 group">
@@ -92,14 +92,14 @@ export default function LandingNavbar({
           <div className="relative">
             <button
               onClick={() => setTenantDropdownOpen(!tenantDropdownOpen)}
-              className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-white/10 text-xs font-mono text-slate-300 hover:text-white hover:border-white/20 transition-all cursor-pointer"
+              className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-zinc-900/90 border border-white/[0.08] text-xs font-mono text-zinc-300 hover:text-white hover:border-white/20 transition-all cursor-pointer shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
             >
               <Building2 className="w-3.5 h-3.5 text-emerald-400" />
               <span>{activeTenant}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-zinc-400" />
             </button>
             {tenantDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[#080D18] border border-white/10 shadow-2xl p-1 z-50 text-xs font-mono">
+              <div className="absolute right-0 mt-2 w-48 rounded-xl bg-[#0c0c0e] border border-white/[0.08] shadow-2xl p-1 z-50 text-xs font-mono">
                 <button
                   onClick={() => {
                     if (onSelectTenant) onSelectTenant('tenant_acme');
@@ -107,8 +107,8 @@ export default function LandingNavbar({
                   }}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
                     activeTenant === 'tenant_acme'
-                      ? 'bg-sky-500/20 text-sky-300 font-semibold'
-                      : 'text-slate-300 hover:bg-slate-800'
+                      ? 'bg-white/10 text-white font-semibold'
+                      : 'text-zinc-300 hover:bg-zinc-900'
                   }`}
                 >
                   Acme Corp (tenant_acme)
@@ -120,8 +120,8 @@ export default function LandingNavbar({
                   }}
                   className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
                     activeTenant === 'tenant_globex'
-                      ? 'bg-purple-500/20 text-purple-300 font-semibold'
-                      : 'text-slate-300 hover:bg-slate-800'
+                      ? 'bg-white/10 text-white font-semibold'
+                      : 'text-zinc-300 hover:bg-zinc-900'
                   }`}
                 >
                   Globex Inc (tenant_globex)
@@ -133,7 +133,7 @@ export default function LandingNavbar({
           {/* Auth Controls */}
           {!isSignedIn ? (
             <SignInButton mode="modal">
-              <button className="px-3.5 py-1.5 text-xs font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/80 border border-white/10 transition-all cursor-pointer">
+              <button className="px-3.5 py-1.5 text-xs font-medium rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-900 border border-white/[0.08] transition-all cursor-pointer">
                 Sign In
               </button>
             </SignInButton>
@@ -149,7 +149,7 @@ export default function LandingNavbar({
           {/* Launch Console CTA */}
           <button
             onClick={onLaunchConsole}
-            className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-sky-500/25 hover:shadow-cyan-400/40 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-white text-zinc-950 font-semibold text-xs shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:bg-zinc-200 transition-all cursor-pointer"
           >
             <span>Launch Console</span>
             <span className="text-xs">→</span>
@@ -160,13 +160,13 @@ export default function LandingNavbar({
         <div className="flex md:hidden items-center space-x-2">
           <button
             onClick={onLaunchConsole}
-            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 text-slate-950 font-bold text-xs"
+            className="px-3 py-1.5 rounded-lg bg-white text-zinc-950 font-semibold text-xs"
           >
             Console
           </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg text-slate-400 hover:text-white bg-slate-900 border border-white/10"
+            className="p-2 rounded-lg text-zinc-400 hover:text-white bg-zinc-900 border border-white/[0.08]"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -175,7 +175,7 @@ export default function LandingNavbar({
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-white/10 bg-[#030712] px-6 py-4 space-y-3 text-xs font-medium text-slate-300">
+        <div className="md:hidden border-b border-white/[0.08] bg-[#060608] px-6 py-4 space-y-3 text-xs font-medium text-zinc-300">
           <a
             href="#architecture"
             onClick={() => setMobileMenuOpen(false)}

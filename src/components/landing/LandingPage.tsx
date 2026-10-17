@@ -20,7 +20,7 @@ export default function LandingPage({ onLaunchConsole }: LandingPageProps) {
   const [activeTenant, setActiveTenant] = useState('tenant_acme');
 
   return (
-    <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+    <div className="min-h-screen bg-[#060608] text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-white">
       <LandingNavbar
         onLaunchConsole={onLaunchConsole}
         activeTenant={activeTenant}

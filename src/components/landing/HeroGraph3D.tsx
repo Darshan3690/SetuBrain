@@ -7,12 +7,7 @@ import {
   Pause,
   ZoomIn,
   ZoomOut,
-  Layers,
-  Sparkles,
   Zap,
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
   Copy,
   Check
 } from 'lucide-react';
@@ -399,19 +394,19 @@ export default function HeroGraph3D() {
   };
 
   return (
-    <div className="relative w-full h-[520px] lg:h-[600px] rounded-3xl bg-[#080D18]/90 border border-white/10 backdrop-blur-2xl overflow-hidden shadow-2xl flex flex-col justify-between">
+    <div className="relative w-full h-[520px] lg:h-[600px] rounded-2xl bg-[#09090b]/90 border border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12),0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl overflow-hidden flex flex-col justify-between">
       {/* Subtle Blueprint Grid Pattern in Background */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.06]"
+        className="absolute inset-0 pointer-events-none opacity-[0.04]"
         style={{
           backgroundImage:
-            'linear-gradient(to right, #38bdf8 1px, transparent 1px), linear-gradient(to bottom, #38bdf8 1px, transparent 1px)',
+            'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)',
           backgroundSize: '32px 32px',
         }}
       />
 
       {/* Radial Atmosphere Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] bg-gradient-to-tr from-sky-500/15 via-indigo-500/10 to-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] bg-gradient-to-tr from-sky-500/10 via-indigo-500/5 to-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* TOP HUD BAR */}
       <div className="relative z-20 px-5 pt-4 flex items-center justify-between pointer-events-none">
@@ -424,13 +419,13 @@ export default function HeroGraph3D() {
 
         {/* Top-Right Badges: Latency & States */}
         <div className="flex items-center space-x-2 pointer-events-auto">
-          <div className="hidden sm:flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-900/80 border border-white/10 text-xs font-mono text-slate-300 shadow-sm">
+          <div className="hidden sm:flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-zinc-900/90 border border-white/[0.08] text-xs font-mono text-zinc-300 shadow-sm">
             <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
             <span>FalkorDB Engine:</span>
-            <span className="text-cyan-400 font-bold">14.3 ms</span>
+            <span className="text-emerald-400 font-bold">14.3 ms</span>
           </div>
 
-          <div className="flex items-center space-x-1 bg-slate-900/80 p-1 rounded-xl border border-white/10 text-[10px] font-mono">
+          <div className="flex items-center space-x-1 bg-zinc-900/90 p-1 rounded-lg border border-white/[0.08] text-[10px] font-mono">
             <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 font-medium">
               ● VERIFIED
             </span>
@@ -445,7 +440,7 @@ export default function HeroGraph3D() {
       </div>
 
       {/* FLOATING LEFT TOOLBAR */}
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-1.5 bg-slate-900/80 p-1.5 rounded-2xl border border-white/10 backdrop-blur-md shadow-xl">
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-1.5 bg-zinc-900/90 p-1.5 rounded-xl border border-white/[0.08] backdrop-blur-md shadow-xl">
         <button
           onClick={() => handleZoom(true)}
           className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
@@ -498,21 +493,21 @@ export default function HeroGraph3D() {
       {/* BOTTOM HUD SECTION: Cypher Telemetry & Selected Node Inspector */}
       <div className="relative z-20 p-4 grid grid-cols-1 md:grid-cols-2 gap-3 pointer-events-none">
         {/* Left Card: Live Cypher Traversal Snippet */}
-        <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-white/10 backdrop-blur-md font-mono text-xs text-slate-300 pointer-events-auto shadow-xl">
-          <div className="flex items-center justify-between pb-2 border-b border-white/5 mb-2">
-            <div className="flex items-center space-x-1.5 text-[11px] text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-cyan-400" />
+        <div className="p-3.5 rounded-xl bg-[#0c0c0e]/95 border border-white/[0.08] backdrop-blur-md font-mono text-xs text-zinc-300 pointer-events-auto shadow-xl">
+          <div className="flex items-center justify-between pb-2 border-b border-white/[0.06] mb-2">
+            <div className="flex items-center space-x-1.5 text-[11px] text-zinc-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
               <span>LIVE CYPHER TRAVERSAL (4 HOPS)</span>
             </div>
             <button
               onClick={copyCypher}
-              className="text-[11px] text-slate-400 hover:text-sky-300 flex items-center space-x-1 cursor-pointer transition-all"
+              className="text-[11px] text-zinc-400 hover:text-white flex items-center space-x-1 cursor-pointer transition-all"
             >
               {copiedQuery ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
               <span>{copiedQuery ? 'Copied' : 'Copy'}</span>
             </button>
           </div>
-          <div className="text-[11px] leading-relaxed text-slate-400 select-all overflow-x-auto">
+          <div className="text-[11px] leading-relaxed text-zinc-400 select-all overflow-x-auto">
             <span className="text-purple-400">MATCH</span> (d:Department)-[:RESPONSIBLE_FOR]-&gt;(p:Procedure)<br />
             <span className="text-purple-400">MATCH</span> (p)-[:USES_APP]-&gt;(a:Application)-[:GOVERNED_BY]-&gt;(pol:Policy)<br />
             <span className="text-purple-400">WHERE</span> pol.status = <span className="text-emerald-400">&apos;ACTIVE&apos;</span> <span className="text-purple-400">RETURN</span> pol, a;
@@ -521,7 +516,7 @@ export default function HeroGraph3D() {
 
         {/* Right Card: Node Detail Inspector */}
         {selectedNode && (
-          <div className="p-3.5 rounded-2xl bg-slate-950/85 border border-white/15 backdrop-blur-md pointer-events-auto shadow-2xl flex flex-col justify-between animate-fade-in">
+          <div className="p-3.5 rounded-xl bg-[#0c0c0e]/95 border border-white/[0.08] backdrop-blur-md pointer-events-auto shadow-2xl flex flex-col justify-between animate-fade-in">
             <div className="flex items-start justify-between">
               <div className="space-y-0.5">
                 <div className="flex items-center space-x-2">
@@ -532,11 +527,11 @@ export default function HeroGraph3D() {
                   <h4 className="text-xs font-bold text-white font-mono">
                     {selectedNode.name}
                   </h4>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-sky-300 font-mono border border-white/10">
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 font-mono border border-white/[0.08]">
                     {selectedNode.type}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 line-clamp-1 mt-1">
+                <p className="text-[11px] text-zinc-400 line-clamp-1 mt-1">
                   {selectedNode.description}
                 </p>
               </div>
@@ -554,9 +549,9 @@ export default function HeroGraph3D() {
               </span>
             </div>
 
-            <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-slate-400">
+            <div className="mt-2 pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] font-mono text-zinc-400">
               <span>Tenant: <span className="text-emerald-400">tenant_acme</span></span>
-              <span>ID: <code className="text-slate-300">{selectedNode.id}</code></span>
+              <span>ID: <code className="text-zinc-300">{selectedNode.id}</code></span>
             </div>
           </div>
         )}

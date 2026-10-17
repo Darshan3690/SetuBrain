@@ -1,38 +1,36 @@
 'use client';
 
-import React, { useState } from 'react';
-import { XCircle, CheckCircle2, AlertTriangle, ArrowRight, GitBranch, Search, Sparkles } from 'lucide-react';
+import React from 'react';
+import { XCircle, CheckCircle2, AlertTriangle, Search } from 'lucide-react';
 
 export default function RetrievalComparison() {
-  const [activeStep, setActiveStep] = useState<number>(2);
-
   return (
-    <section id="comparison" className="py-20 lg:py-28 relative overflow-hidden">
+    <section id="comparison" className="py-20 lg:py-28 relative overflow-hidden bg-[#060608]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-900 border border-white/10 text-xs font-mono text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-cyan-400" />
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-zinc-900/90 border border-white/[0.08] text-xs font-mono text-zinc-300 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>DETERMINISTIC GOVERNANCE BENCHMARK</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
             Vector Similarity vs.{' '}
-            <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-zinc-100 via-zinc-300 to-zinc-400 bg-clip-text text-transparent">
               Governed Graph Reasoning
             </span>
           </h2>
-          <p className="text-sm sm:text-base text-slate-400">
+          <p className="text-sm sm:text-base text-zinc-400">
             When enterprise policies evolve, semantic similarity returns whatever text chunk matches best—even if it was superseded last week. Here is what happens on the exact same question.
           </p>
         </div>
 
         {/* Common Prompt Box */}
-        <div className="mb-10 max-w-2xl mx-auto p-4 rounded-2xl bg-slate-900/90 border border-white/15 backdrop-blur-xl shadow-2xl flex items-center space-x-4">
-          <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/25 flex items-center justify-center text-sky-400 shrink-0">
+        <div className="mb-10 max-w-2xl mx-auto p-4 rounded-xl bg-[#0c0c0e]/90 border border-white/[0.08] backdrop-blur-xl shadow-2xl flex items-center space-x-4">
+          <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
             <Search className="w-5 h-5" />
           </div>
           <div className="flex-1">
-            <div className="text-[11px] font-mono text-slate-400">TEST QUESTION POSED TO BOTH ENGINES:</div>
+            <div className="text-[11px] font-mono text-zinc-400">TEST QUESTION POSED TO BOTH ENGINES:</div>
             <div className="text-sm sm:text-base font-semibold text-white font-sans mt-0.5">
               &ldquo;What is the current hotel reimbursement limit for employee travel?&rdquo;
             </div>
@@ -42,7 +40,7 @@ export default function RetrievalComparison() {
         {/* Two-Column Comparison Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* LEFT: NAIVE VECTOR RAG (FLAWED) */}
-          <div className="p-6 sm:p-8 rounded-3xl bg-[#080D18]/90 border border-rose-500/25 relative overflow-hidden flex flex-col justify-between shadow-2xl">
+          <div className="p-6 sm:p-8 rounded-2xl bg-[#0c0c0e]/95 border border-rose-500/30 relative overflow-hidden flex flex-col justify-between shadow-2xl transition-all duration-300 hover:-translate-y-0.5">
             {/* Top Badge */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -90,7 +88,7 @@ export default function RetrievalComparison() {
           </div>
 
           {/* RIGHT: SETUBRAIN GRAPH GOVERNANCE (VERIFIED) */}
-          <div className="p-6 sm:p-8 rounded-3xl bg-[#080D18]/90 border border-emerald-500/30 relative overflow-hidden flex flex-col justify-between shadow-2xl">
+          <div className="p-6 sm:p-8 rounded-2xl bg-[#0c0c0e]/95 border border-emerald-500/40 relative overflow-hidden flex flex-col justify-between shadow-2xl transition-all duration-300 hover:-translate-y-0.5 shadow-[inset_0_1px_0_0_rgba(16,185,129,0.15)]">
             {/* Top Badge */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">

@@ -1,34 +1,34 @@
 'use client';
 
 import React from 'react';
-import { GitBranch, Zap, ExternalLink, ShieldCheck, Heart } from 'lucide-react';
+import { GitBranch, ExternalLink } from 'lucide-react';
 
 export default function LandingFooter({ onLaunchConsole }: { onLaunchConsole: () => void }) {
   return (
-    <footer className="border-t border-white/10 bg-[#030712] relative overflow-hidden">
+    <footer className="border-t border-white/[0.08] bg-[#060608] relative overflow-hidden">
       {/* FINAL CALL TO ACTION BOX */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-16">
-        <div className="p-8 sm:p-14 rounded-3xl bg-gradient-to-r from-sky-950/40 via-slate-900/60 to-indigo-950/40 border border-white/10 shadow-2xl relative overflow-hidden text-center space-y-6">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-900 border border-white/10 text-xs font-mono text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-cyan-400" />
+        <div className="p-8 sm:p-14 rounded-2xl bg-zinc-900/90 border border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_20px_50px_rgba(0,0,0,0.7)] relative overflow-hidden text-center space-y-6">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-zinc-950/80 border border-white/[0.08] text-xs font-mono text-zinc-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span>FALKORDB HACKATHON 2026</span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight max-w-3xl mx-auto leading-tight">
             Build AI agents that know what your company knows—
-            <span className="bg-gradient-to-r from-cyan-400 to-sky-300 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
               and when they don&apos;t.
             </span>
           </h2>
 
-          <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base text-zinc-400 max-w-xl mx-auto leading-relaxed">
             Connect institutional knowledge to traceable, governed execution. Explore the live interactive console on your local FalkorDB instance.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-3">
             <button
               onClick={onLaunchConsole}
-              className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-400 text-slate-950 font-bold text-sm shadow-xl shadow-sky-500/25 hover:shadow-cyan-400/40 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              className="px-7 py-3 rounded-xl bg-white text-zinc-950 font-semibold text-sm shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:bg-zinc-200 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
               Launch Console Now →
             </button>
@@ -36,10 +36,10 @@ export default function LandingFooter({ onLaunchConsole }: { onLaunchConsole: ()
               href="https://github.com/Darshan3690/SetuBrain"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center space-x-2 px-6 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-sm font-medium border border-white/10 hover:border-white/20 transition-all cursor-pointer"
+              className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium border border-white/[0.08] hover:border-white/20 transition-all cursor-pointer"
             >
               <span>Explore GitHub Repository</span>
-              <ExternalLink className="w-4 h-4 text-slate-400" />
+              <ExternalLink className="w-4 h-4 text-zinc-400" />
             </a>
           </div>
         </div>
