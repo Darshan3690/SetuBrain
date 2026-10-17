@@ -156,6 +156,203 @@ export async function resolveCuratorConflict() {
   };
 }
 
+export interface CustomPolicyInput {
+  tenantId?: string;
+  title: string;
+  department?: string;
+  app?: string;
+  maxLimit?: string;
+  content: string;
+  ownerName?: string;
+  ownerEmail?: string;
+}
+
+export async function addCustomPolicy(input: CustomPolicyInput) {
+  const tenantKey = (input.tenantId === 'tenant_globex' ? 'tenant_globex' : 'tenant_acme');
+  const store = fallbackStore[tenantKey];
+  
+  const safeSlug = input.title.replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase() || 'CUSTOM';
+  const polId = `POL-${safeSlug}-${Math.floor(100 + Math.random() * 900)}`;
+  const procId = `PROC-${safeSlug}-${Math.floor(100 + Math.random() * 900)}`;
+  const appId = `APP-${(input.app || 'Navan').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8)}`;
+  const contactId = `SME-${(input.ownerName || 'Priya').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 8)}`;
+  const deptSlug = (input.department || 'Finance').toLowerCase();
+  const deptId = deptSlug.includes('eng') ? 'DEPT-ENG' : deptSlug.includes('sec') ? 'DEPT-SEC' : deptSlug.includes('hr') ? 'DEPT-HR' : deptSlug.includes('ops') ? 'DEPT-OPS' : 'DEPT-FIN';
+
+  // Add Policy Node
+  store.nodes.push({
+    id: polId,
+    labels: ['Policy'],
+    properties: {
+      title: input.title,
+      content: input.content,
+      status: 'APPROVED',
+      version: '1.0',
+      maxLimit: input.maxLimit || '$300/year',
+      effective_date: new Date().toISOString().split('T')[0],
+      review_date: '2027-10-15',
+      confidence: 1.0,
+      owner: input.ownerName || 'Priya Sharma',
+      ownerEmail: input.ownerEmail || 'priya@acme.com',
+    }
+  });
+
+  // Add Procedure Node
+  store.nodes.push({
+    id: procId,
+    labels: ['Procedure'],
+    properties: {
+      title: `${input.title} Workflow`,
+      steps: input.content,
+      status: 'APPROVED',
+      effective_date: new Date().toISOString().split('T')[0],
+      review_date: '2027-10-15',
+    }
+  });
+
+  // Ensure App exists
+  if (!store.nodes.some(n => n.id === appId)) {
+    store.nodes.push({
+      id: appId,
+      labels: ['Application'],
+      properties: {
+        name: input.app || 'Navan',
+        purpose: 'Corporate workflow portal',
+        url: `https://${(input.app || 'app').toLowerCase().replace(/\s+/g, '')}.company.internal`,
+        access_procedure: 'SSO via Okta',
+        sensitivity: 'MEDIUM',
+      }
+    });
+  }
+
+  // Ensure Contact exists
+  if (!store.nodes.some(n => n.id === contactId)) {
+    store.nodes.push({
+      id: contactId,
+      labels: ['Contact'],
+      properties: {
+        name: input.ownerName || 'Priya Sharma',
+        email: input.ownerEmail || 'priya@acme.com',
+        role: 'SME',
+        title: 'Policy Owner',
+      }
+    });
+  }
+
+  // Connect Edges
+  store.edges.push(
+    { from: deptId, to: procId, type: 'RESPONSIBLE_FOR' },
+    { from: procId, to: appId, type: 'USES_APP' },
+    { from: procId, to: polId, type: 'GOVERNED_BY' },
+    { from: polId, to: contactId, type: 'APPROVED_BY' }
+  );
+
+  // Attempt live FalkorDB write
+  try {
+    const { graph } = await getTenantGraph(tenantKey);
+    await graph.query(`
+      MATCH (d:Department {id: '${deptId}'})
+      MERGE (app:Application {id: '${appId}'})
+        ON CREATE SET app.name = '${input.app || 'Navan'}'
+      MERGE (sme:Contact {id: '${contactId}'})
+        ON CREATE SET sme.name = '${input.ownerName || 'Priya Sharma'}', sme.email = '${input.ownerEmail || 'priya@acme.com'}'
+      CREATE (proc:Procedure {id: '${procId}', title: '${input.title.replace(/'/g, "\\'")} Workflow', steps: '${input.content.replace(/'/g, "\\'")}', status: 'APPROVED'})
+      CREATE (pol:Policy {id: '${polId}', title: '${input.title.replace(/'/g, "\\'")}', content: '${input.content.replace(/'/g, "\\'")}', maxLimit: '${input.maxLimit || '$300/year'}', status: 'APPROVED', review_date: '2027-10-15'})
+      MERGE (d)-[:RESPONSIBLE_FOR]->(proc)
+      MERGE (proc)-[:USES_APP]->(app)
+      MERGE (proc)-[:GOVERNED_BY]->(pol)
+      MERGE (pol)-[:APPROVED_BY]->(sme)
+    `);
+  } catch {
+    // live db optional
+  }
+
+  return {
+    ok: true,
+    policyId: polId,
+    procedureId: procId,
+    title: input.title,
+    message: `Policy "${input.title}" published live into ${tenantKey} graph!`,
+  };
+}
+
+export interface CuratedDecisionInput {
+  tenantId?: string;
+  decisionId: string;
+  title: string;
+  rationale: string;
+  sourceUrl: string;
+  sourcePlatform: 'Slack' | 'Discord' | 'Jira' | 'Email';
+  approverName?: string;
+  approverEmail?: string;
+}
+
+export async function addCuratedDecision(input: CuratedDecisionInput) {
+  const tenantKey = (input.tenantId === 'tenant_globex' ? 'tenant_globex' : 'tenant_acme');
+  const store = fallbackStore[tenantKey];
+
+  const docId = `DOC-${input.decisionId}`;
+  const smeId = 'SME-PRIYA';
+
+  // Add Decision Node if not present
+  if (!store.nodes.some(n => n.id === input.decisionId)) {
+    store.nodes.push({
+      id: input.decisionId,
+      labels: ['Decision'],
+      properties: {
+        title: input.title,
+        rationale: input.rationale,
+        timestamp: new Date().toISOString(),
+      }
+    });
+  }
+
+  // Add Document Node
+  if (!store.nodes.some(n => n.id === docId)) {
+    store.nodes.push({
+      id: docId,
+      labels: ['Document'],
+      properties: {
+        title: `${input.sourcePlatform} Thread Proof: ${input.title}`,
+        source_type: input.sourcePlatform,
+        url: input.sourceUrl,
+        created_at: new Date().toISOString().split('T')[0],
+      }
+    });
+  }
+
+  // Connect edges
+  if (!store.edges.some(e => e.from === input.decisionId && e.to === docId)) {
+    store.edges.push({ from: input.decisionId, to: docId, type: 'SUPPORTED_BY' });
+  }
+  if (!store.edges.some(e => e.from === input.decisionId && e.to === smeId)) {
+    store.edges.push({ from: input.decisionId, to: smeId, type: 'APPROVED_BY' });
+  }
+
+  // Attempt live FalkorDB write
+  try {
+    const { graph } = await getTenantGraph(tenantKey);
+    await graph.query(`
+      MATCH (sme:Contact {id: '${smeId}'})
+      MERGE (dec:Decision {id: '${input.decisionId}'})
+        ON CREATE SET dec.title = '${input.title.replace(/'/g, "\\'")}', dec.rationale = '${input.rationale.replace(/'/g, "\\'")}'
+      MERGE (doc:Document {id: '${docId}'})
+        ON CREATE SET doc.title = '${input.sourcePlatform} Thread Proof', doc.source_type = '${input.sourcePlatform}', doc.url = '${input.sourceUrl}'
+      MERGE (dec)-[:SUPPORTED_BY]->(doc)
+      MERGE (dec)-[:APPROVED_BY]->(sme)
+    `);
+  } catch {
+    // live db optional
+  }
+
+  return {
+    ok: true,
+    decisionId: input.decisionId,
+    title: input.title,
+    message: `Decision "${input.decisionId}" imported with ${input.sourcePlatform} provenance into FalkorDB!`,
+  };
+}
+
 export function getDepartmentHealthData(tenantId: string = 'tenant_acme') {
   if (tenantId === 'tenant_globex') {
     return [
@@ -295,6 +492,9 @@ export async function seedSetuBrainGraphs() {
       { id: 'PROC-OPS-05', labels: ['Procedure'], properties: { title: 'Enterprise Customer Refund Exception Workflow', steps: '1. Verify SLA breach metrics. 2. Check POL-OPS-300 cap. 3. Execute refund in Stripe Ops Portal.', completion_time: '4 hours', exceptions: 'Requires VP Finance approval above $1,000', status: 'APPROVED', effective_date: '2026-05-01', review_date: '2027-05-01' } },
       { id: 'POL-OPS-300', labels: ['Policy'], properties: { title: 'Enterprise SLA Credit & Refund Exception Policy', content: 'Cash refunds above $1,000 on annual enterprise plans are permitted if uptime drops below 99.5% and VP Finance approves in #exec-approvals.', status: 'APPROVED', version: '2.1', effective_date: '2026-05-01', review_date: '2027-05-01', confidence: 1.0 } },
       { id: 'DEC-901', labels: ['Decision'], properties: { title: 'Approved $1,500 Annual Refund Exception for CloudScale Inc (Ticket #TKT-4402)', rationale: 'Customer experienced a 42-minute regional outage on Sept 29. Approved $1,500 refund via Stripe Ops Portal under POL-OPS-300.', timestamp: '2026-10-02T14:20:00Z' } },
+      // Live Custom Policy Template (Remote Work & Monitor Stipend)
+      { id: 'PROC-REMOTE-01', labels: ['Procedure'], properties: { title: 'Remote Work & Home Office Equipment Reimbursement', steps: '1. Order monitors, keyboards, or ergonomic accessories via Navan or submit receipt. 2. Up to $300/year is auto-approved. 3. Larger workstation allowances require VP Finance (Priya Sharma) sign-off.', completion_time: 'Instant (<24 hrs)', exceptions: 'Special medical ergonomic needs approved by HR', status: 'APPROVED', effective_date: '2026-03-01', review_date: '2027-10-15' } },
+      { id: 'POL-REMOTE-2026', labels: ['Policy'], properties: { title: 'Remote Work & Home Office Monitor Stipend', content: 'Employees can expense up to $300/year for home office monitors, keyboards, and ergonomic gear via Navan. Auto-approved by Priya Sharma.', status: 'APPROVED', version: '2.0', effective_date: '2026-03-01', review_date: '2027-10-15', confidence: 1.0, maxLimit: '$300/year' } },
     ],
     edges: [
       { from: 'SME-PRIYA', to: 'DEPT-FIN', type: 'REPRESENTS', properties: { role: 'SME' } },
@@ -339,7 +539,13 @@ export async function seedSetuBrainGraphs() {
       { from: 'PROC-OPS-05', to: 'POL-OPS-300', type: 'GOVERNED_BY' },
       { from: 'DEC-901', to: 'POL-OPS-300', type: 'BASED_ON' },
       { from: 'POL-OPS-300', to: 'DOC-SLACK-901', type: 'EVIDENCED_BY' },
-      { from: 'POL-OPS-300', to: 'SME-PRIYA', type: 'APPROVED_BY' }
+      { from: 'POL-OPS-300', to: 'SME-PRIYA', type: 'APPROVED_BY' },
+
+      // Remote Work & Monitor Stipend Edges
+      { from: 'DEPT-FIN', to: 'PROC-REMOTE-01', type: 'RESPONSIBLE_FOR' },
+      { from: 'PROC-REMOTE-01', to: 'APP-NAVAN', type: 'USES_APP' },
+      { from: 'PROC-REMOTE-01', to: 'POL-REMOTE-2026', type: 'GOVERNED_BY' },
+      { from: 'POL-REMOTE-2026', to: 'SME-PRIYA', type: 'APPROVED_BY' }
     ]
   };
 

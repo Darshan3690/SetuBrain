@@ -11,21 +11,22 @@ export default function Page() {
 
   // Sync view based on login state and URL params
   useEffect(() => {
+    let targetView: 'landing' | 'console' | null = null;
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlView = params.get('view');
       if (urlView === 'console' || urlView === 'landing') {
-        setView(urlView);
-        return;
+        targetView = urlView;
       }
     }
 
-    if (isLoaded) {
-      if (isSignedIn) {
-        setView('console');
-      } else {
-        setView('landing');
-      }
+    if (!targetView && isLoaded) {
+      targetView = isSignedIn ? 'console' : 'landing';
+    }
+
+    if (targetView) {
+      const timer = setTimeout(() => setView(targetView), 0);
+      return () => clearTimeout(timer);
     }
   }, [isSignedIn, isLoaded]);
 

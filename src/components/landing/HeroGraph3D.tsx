@@ -268,7 +268,10 @@ export default function HeroGraph3D() {
   // Set default selected node to POL-FIN-2026
   useEffect(() => {
     const defaultNode = graphData.nodes.find((n) => n.id === 'POL-FIN-2026');
-    if (defaultNode) setSelectedNode(defaultNode);
+    if (defaultNode) {
+      const timer = setTimeout(() => setSelectedNode(defaultNode), 0);
+      return () => clearTimeout(timer);
+    }
   }, [graphData]);
 
   // Dynamic 3D Force Graph WebGL Initialization

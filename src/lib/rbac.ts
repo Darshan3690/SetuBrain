@@ -31,7 +31,7 @@ export async function getSessionRoleContext(): Promise<UserSessionContext> {
   }
 
   // 1. Check custom claims if token template is configured in Clerk
-  const claims = session.sessionClaims as Record<string, any> | undefined;
+  const claims = session.sessionClaims as Record<string, Record<string, unknown>> | undefined;
   let role = (claims?.metadata?.role || claims?.publicMetadata?.role) as UserRole | undefined;
   let tenantId = (claims?.metadata?.tenantId || claims?.publicMetadata?.tenantId) as string | undefined;
 

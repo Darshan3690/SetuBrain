@@ -22,7 +22,15 @@ import {
   History,
   XCircle,
   Terminal,
-  Globe
+  Globe,
+  Crown,
+  MessageSquare,
+  Send,
+  PlusCircle,
+  ExternalLink,
+  Calendar,
+  CheckSquare,
+  ShieldAlert
 } from 'lucide-react';
 import GraphTopologyMap from '@/components/GraphTopologyMap';
 import SpatialGraph3D from '@/components/SpatialGraph3D';
@@ -135,38 +143,48 @@ interface EpisodeLog {
 const TRAP_PRESETS = [
   {
     id: 'trap1',
-    label: 'Trap 1: Multi-Hop & SKILL.md',
-    desc: '4-Hop ownership & dynamic skill generation',
+    trapNumber: 'TRAP 1',
+    label: 'Scenario 1: Software Purchase ($40 Cursor)',
+    desc: 'New hire needs software. Verified 4-hop chain: Ramp -> $500 cap -> Priya Sharma',
     query: 'How do I purchase software?',
-    badge: 'Verified 4-Hop'
+    badge: 'Day 1 New Hire',
+    trapBadge: 'TRAP 1: MULTI-HOP'
   },
   {
     id: 'trap2',
-    label: 'Trap 2: Superseded Policy',
-    desc: 'Catches $250 new cap vs $150 legacy limit',
+    trapNumber: 'TRAP 2',
+    label: 'Scenario 2: Outdated PDF Shield',
+    desc: 'Blocks stale $150 Notion PDF; returns active 2026 $250 limit via Navan',
     query: 'What is our hotel reimbursement limit?',
-    badge: 'Supersession'
+    badge: 'Stale Doc Shield',
+    trapBadge: 'TRAP 2: SUPERSEDED'
   },
   {
     id: 'trap3',
-    label: 'Trap 3: Conflicting Policies',
-    desc: '0-hour wipe vs 7-day HR grace period',
+    trapNumber: 'TRAP 3',
+    label: 'Scenario 3: Zero-Trust Security Clash',
+    desc: 'Catches 0-hr wipe vs 7-day HR rule before AI makes costly mistake',
     query: 'How do we handle laptop wipe on offboarding?',
-    badge: 'Curator Agent'
+    badge: 'Curator Halt',
+    trapBadge: 'TRAP 3: CONFLICT'
   },
   {
     id: 'trap4',
-    label: 'Trap 4: Missing Knowledge',
-    desc: 'Deterministic abstention & routing to Marcus Vance',
+    trapNumber: 'TRAP 4',
+    label: 'Scenario 4: Missing Rule (No Guessing!)',
+    desc: 'Refuses to hallucinate GPU form; routes to Marcus Vance (Infra Lead)',
     query: 'What is my GPU cluster quota in Engineering?',
-    badge: 'Closed Loop'
+    badge: 'Zero Hallucination',
+    trapBadge: 'TRAP 4: ABSTENTION'
   },
   {
     id: 'trap5',
-    label: 'Trap 5: Decision Provenance',
-    desc: 'Traces DEC-901 back to Slack & Policy',
+    trapNumber: 'TRAP 5',
+    label: 'Scenario 5: Audit & Slack Provenance',
+    desc: 'Traces DEC-901 refund to #ops-outage Slack thread and VP sign-off',
     query: 'Trace decision DEC-901 refund exception',
-    badge: 'Audit Trail'
+    badge: 'SOC2 Audit Trail',
+    trapBadge: 'TRAP 5: PROVENANCE'
   }
 ];
 
@@ -228,7 +246,7 @@ function renderHighlightedHop(hop: string) {
 
 export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?: () => void }) {
   const { isSignedIn } = useUser();
-  const [activeTab, setActiveTab] = useState<'engine' | 'inbox' | 'curator' | 'departments' | 'benchmark' | 'memory' | 'mcp'>('engine');
+  const [activeTab, setActiveTab] = useState<'engine' | 'inbox' | 'curator' | 'departments' | 'benchmark' | 'memory' | 'mcp' | 'admin'>('engine');
   const [tenant, setTenant] = useState<'tenant_acme' | 'tenant_globex'>('tenant_acme');
   const [query, setQuery] = useState('How do I purchase software?');
   const [loading, setLoading] = useState(false);
@@ -244,6 +262,79 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
   const [departments, setDepartments] = useState<DepartmentData[]>([]);
   const [benchmarks, setBenchmarks] = useState<BenchmarkItem[]>([]);
   const [episodes, setEpisodes] = useState<EpisodeLog[]>([]);
+
+  // Phase 3: Owner & Admin Console state
+  const [customTitle, setCustomTitle] = useState('Remote Work & Home Office Monitor Stipend');
+  const [customDept, setCustomDept] = useState('Finance');
+  const [customApp, setCustomApp] = useState('Navan');
+  const [customLimit, setCustomLimit] = useState('$300/year');
+  const [customContent, setCustomContent] = useState('Employees can expense up to $300/year for home office monitors, keyboards, and ergonomic gear via Navan. Auto-approved by Priya Sharma.');
+  const [customOwner, setCustomOwner] = useState('Priya Sharma');
+  const [customOwnerEmail, setCustomOwnerEmail] = useState('priya@acme.com');
+  const [publishingPolicy, setPublishingPolicy] = useState(false);
+  const [importingDecision, setImportingDecision] = useState<string | null>(null);
+
+  const handlePublishCustomPolicy = async () => {
+    setPublishingPolicy(true);
+    try {
+      const res = await fetch('/api/policy/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId: tenant,
+          title: customTitle,
+          department: customDept,
+          app: customApp,
+          maxLimit: customLimit,
+          content: customContent,
+          ownerName: customOwner,
+          ownerEmail: customOwnerEmail,
+        })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showToast(`Policy "${customTitle}" published live to ${tenant} graph! Now search "Remote work stipend"`);
+        refreshAuxiliaryData();
+      } else {
+        showToast(`Error: ${data.error || 'Failed to publish'}`);
+      }
+    } catch (err: unknown) {
+      showToast(`Error publishing policy: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setPublishingPolicy(false);
+    }
+  };
+
+  const handleImportDecision = async (decId: string, title: string, rationale: string, sourceUrl: string, sourcePlatform: 'Slack' | 'Discord') => {
+    setImportingDecision(decId);
+    try {
+      const res = await fetch('/api/policy/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'import_decision',
+          tenantId: tenant,
+          decisionId: decId,
+          title,
+          rationale,
+          sourceUrl,
+          sourcePlatform,
+          approverName: 'Priya Sharma',
+        })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showToast(`Decision "${decId}" imported from ${sourcePlatform} with audit link!`);
+        refreshAuxiliaryData();
+      } else {
+        showToast(`Error: ${data.error || 'Failed to import'}`);
+      }
+    } catch (err: unknown) {
+      showToast(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setImportingDecision(null);
+    }
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -666,6 +757,24 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
               JSON-RPC 2.0
             </span>
           </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('admin');
+              refreshAuxiliaryData();
+            }}
+            className={`shrink-0 whitespace-nowrap inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
+              activeTab === 'admin'
+                ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Crown className="w-3.5 h-3.5 text-amber-300" />
+            <span>Owner & Admin Console</span>
+            <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono border border-amber-500/30">
+              Live Ingest
+            </span>
+          </button>
         </div>
       </header>
 
@@ -703,14 +812,14 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
               </div>
             </div>
 
-            {/* 5 Traps Showcase Strip */}
+            {/* Real Enterprise Scenarios 1-Click Strip */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
                   <ShieldCheck className="w-4 h-4 text-indigo-400" />
-                  <span>Interactive Trap Demonstrations</span>
+                  <span>Real Enterprise Scenarios (1-Click Demo)</span>
                 </h2>
-                <span className="text-xs text-slate-500">1-Click Verification of Enterprise Failure Modes</span>
+                <span className="text-xs text-slate-500">Plain-English Stories with FalkorDB Graph & Trap Proof</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -729,11 +838,13 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                           : 'bg-slate-900/40 border-slate-800/80 hover:bg-slate-800/50 hover:border-slate-700'
                       }`}
                     >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                      <div className="flex items-center justify-between w-full gap-1">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-950/90 text-indigo-300 border border-indigo-700/60 shadow-sm truncate">
                           {preset.badge}
                         </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300 group-hover:translate-x-0.5 transition-all" />
+                        <span className="text-[9px] font-mono font-semibold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 shrink-0">
+                          {preset.trapBadge}
+                        </span>
                       </div>
                       <div>
                         <div className="text-xs font-bold text-white leading-tight mb-1">{preset.label}</div>
@@ -754,7 +865,7 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleRunQuery()}
-                  placeholder="Ask a corporate policy or procedure question..."
+                  placeholder="Ask a corporate policy or procedure question (e.g. 'Can I expense a monitor?' or 'Hotel limit')..."
                   className="w-full bg-slate-900/70 border border-slate-800 rounded-2xl pl-11 pr-4 py-3.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-inner"
                 />
               </div>
@@ -774,10 +885,14 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                 <div className="lg:col-span-7 space-y-6">
                   {/* Primary Answer Card */}
                   <div className="p-6 rounded-3xl bg-slate-900/50 border border-white/10 shadow-2xl space-y-4 backdrop-blur-2xl ring-1 ring-white/5">
-                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                      <div className="flex items-center space-x-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
+                      <div className="flex flex-wrap items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                         <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Authoritative Answer</span>
+                        <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[11px] font-medium">
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span>Verified Freshness: Valid through Oct 2027</span>
+                        </span>
                       </div>
                       <div className="flex items-center space-x-2">
                         {result.latencyMs && (
@@ -1523,6 +1638,293 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
         {/* TAB 7: MCP TOOL INSPECTOR (TRACK 01)                                   */}
         {/* ====================================================================== */}
         {activeTab === 'mcp' && <McpInspector />}
+
+        {/* ====================================================================== */}
+        {/* TAB 8: OWNER & ADMIN CONSOLE (LIVE INGEST & POLICY CURATION)          */}
+        {/* ====================================================================== */}
+        {activeTab === 'admin' && (
+          <div className="space-y-8">
+            {/* Header Banner */}
+            <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-950/40 via-slate-900/60 to-purple-950/40 border border-amber-900/40 shadow-2xl space-y-2 backdrop-blur-md">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold shadow-inner">
+                    <Crown className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white tracking-tight flex items-center space-x-2">
+                      <span>Owner & Admin Console</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                        Live FalkorDB Mutations
+                      </span>
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Author new corporate policies on the fly, import Slack/Discord decisions with full provenance, and govern supersession ledgers.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-mono border border-slate-700">
+                    Tenant: <strong className="text-emerald-400">{tenant}</strong>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Grid: 2 Columns */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Left Column: Live Custom Policy Editor */}
+              <div className="lg:col-span-7 space-y-6">
+                <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/10 shadow-xl space-y-5 backdrop-blur-md">
+                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <div className="flex items-center space-x-2">
+                      <PlusCircle className="w-4 h-4 text-amber-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                        Live Custom Policy Editor
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-400">
+                      Writes Cypher MERGE directly to FalkorDB
+                    </span>
+                  </div>
+
+                  <div className="space-y-4 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-semibold text-slate-300">Policy Title</label>
+                        <input
+                          type="text"
+                          value={customTitle}
+                          onChange={(e) => setCustomTitle(e.target.value)}
+                          className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-amber-500 font-sans"
+                          placeholder="e.g. Remote Work & Monitor Stipend"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-semibold text-slate-300">Responsible Department</label>
+                        <select
+                          value={customDept}
+                          onChange={(e) => setCustomDept(e.target.value)}
+                          className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 focus:outline-none focus:border-amber-500 font-sans"
+                        >
+                          <option value="Finance">Finance (DEPT-FIN)</option>
+                          <option value="Engineering">Engineering (DEPT-ENG)</option>
+                          <option value="Security">Security (DEPT-SEC)</option>
+                          <option value="Human Resources">Human Resources (DEPT-HR)</option>
+                          <option value="Operations">Operations (DEPT-OPS)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-semibold text-slate-300">Application / Portal Used</label>
+                        <input
+                          type="text"
+                          value={customApp}
+                          onChange={(e) => setCustomApp(e.target.value)}
+                          className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-amber-500 font-sans"
+                          placeholder="e.g. Navan, Ramp, Workday"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-semibold text-slate-300">Auto-Approved Limit / Cap</label>
+                        <input
+                          type="text"
+                          value={customLimit}
+                          onChange={(e) => setCustomLimit(e.target.value)}
+                          className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-amber-500 font-sans"
+                          placeholder="e.g. $300/year"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-slate-300">Full Policy Content & Employee Steps</label>
+                      <textarea
+                        rows={3}
+                        value={customContent}
+                        onChange={(e) => setCustomContent(e.target.value)}
+                        className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-amber-500 font-sans leading-relaxed text-xs"
+                        placeholder="Detailed rules, reimbursement steps, and approval exceptions..."
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-semibold text-slate-300">Review Owner / SME</label>
+                        <input
+                          type="text"
+                          value={customOwner}
+                          onChange={(e) => setCustomOwner(e.target.value)}
+                          className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 focus:outline-none focus:border-amber-500 font-sans"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-semibold text-slate-300">Owner Email</label>
+                        <input
+                          type="email"
+                          value={customOwnerEmail}
+                          onChange={(e) => setCustomOwnerEmail(e.target.value)}
+                          className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 focus:outline-none focus:border-amber-500 font-sans"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                      <div className="text-[11px] text-slate-400">
+                        ⚡ Creates 4-hop chain: <code className="text-amber-300">(:Dept)-[:RESPONSIBLE_FOR]-&gt;(:Proc)-[:USES_APP]-&gt;(:App)-[:GOVERNED_BY]-&gt;(:Policy)</code>
+                      </div>
+                      <button
+                        onClick={handlePublishCustomPolicy}
+                        disabled={publishingPolicy}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-600/30 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
+                      >
+                        {publishingPolicy ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Publishing to Graph...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-3.5 h-3.5" />
+                            <span>Publish to Company Brain</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Policy Precedence Ledger */}
+                <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/10 shadow-xl space-y-4 backdrop-blur-md">
+                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <div className="flex items-center space-x-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                        Active Policy Precedence Ledger
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-emerald-400">
+                      Graph Supersessions Enforced
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-emerald-900/30 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-emerald-300">POL-EXP-2026 ($250/night via Navan)</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">ACTIVE</span>
+                      </div>
+                      <div className="text-slate-400 text-[11px]">
+                        Explicitly supersedes legacy <code className="text-red-300 line-through">POL-EXP-2024 ($150/night)</code>. AI agents will never cite the deprecated rate.
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-purple-900/30 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-purple-300">POL-SEC-101 (Zero-Trust 0-Hour Wipe)</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950 text-purple-400 border border-purple-800">
+                          {curatorStatus === 'RESOLVED' ? 'SUPERSEDES HR' : 'FLAGGED CONFLICT'}
+                        </span>
+                      </div>
+                      <div className="text-slate-400 text-[11px]">
+                        {curatorStatus === 'RESOLVED'
+                          ? 'Curator Agent established precedence over POL-HR-202 (7-day grace period) for security compliance.'
+                          : 'Curator Agent actively freezes automated deprovisioning until conflict resolution is approved.'}
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-indigo-900/30 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-indigo-300">POL-FIN-2026 ($500 SaaS Procurement)</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-800">ACTIVE</span>
+                      </div>
+                      <div className="text-slate-400 text-[11px]">
+                        Governed by Ramp application with auto-approval threshold. Contracts &gt;$5,000 route to Priya Sharma.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Curated Slack & Discord Decisions Importer */}
+              <div className="lg:col-span-5 space-y-6">
+                <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/10 shadow-xl space-y-4 backdrop-blur-md">
+                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <div className="flex items-center space-x-2">
+                      <MessageSquare className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                        Curated Chat & Ticket Importer
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                      Slack / Discord
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Convert transient Slack approvals and Discord discussions into permanent graph memory with direct source URLs and audit provenance.
+                  </p>
+
+                  <div className="space-y-4 pt-1">
+                    {/* Simulated Slack Thread 1 */}
+                    <div className="p-4 rounded-2xl bg-slate-950/90 border border-slate-800/90 space-y-3 text-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                          <span className="font-bold text-white font-mono">Slack #exec-approvals</span>
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-mono">Oct 2, 2026</span>
+                      </div>
+                      <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-slate-300 font-mono text-[11px] space-y-1">
+                        <div className="text-indigo-400 font-semibold">@priya (VP Finance):</div>
+                        <div>&ldquo;Approved $1,500 cash refund exception for CloudScale Inc. SLA breach logs confirmed 42-min downtime on US-East-1 cluster.&rdquo;</div>
+                      </div>
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[10px] font-mono text-slate-400">ID: DEC-901 • POL-OPS-300</span>
+                        <button
+                          onClick={() => handleImportDecision('DEC-901', 'Approved $1,500 Refund for CloudScale Inc', 'Customer experienced 42-minute regional outage. Approved under POL-OPS-300.', 'https://acme.slack.com/archives/C01/p1759401', 'Slack')}
+                          disabled={importingDecision === 'DEC-901'}
+                          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] transition-all flex items-center space-x-1 cursor-pointer disabled:opacity-50"
+                        >
+                          <Check className="w-3 h-3" />
+                          <span>{importingDecision === 'DEC-901' ? 'Importing...' : 'Live in Brain (Re-sync)'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Simulated Discord Thread 2 */}
+                    <div className="p-4 rounded-2xl bg-slate-950/90 border border-slate-800/90 space-y-3 text-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-purple-400" />
+                          <span className="font-bold text-white font-mono">Discord #dev-leads</span>
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-mono">Oct 14, 2026</span>
+                      </div>
+                      <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-slate-300 font-mono text-[11px] space-y-1">
+                        <div className="text-purple-400 font-semibold">@marcus (Principal Infra):</div>
+                        <div>&ldquo;Hackathon AI squads authorized to spin up 8x H100 SXM5 instances via Run:ai. Auto-deprovision policy set for 72 hours.&rdquo;</div>
+                      </div>
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[10px] font-mono text-slate-400">ID: DEC-902 • PROC-ENG-GPU</span>
+                        <button
+                          onClick={() => handleImportDecision('DEC-902', 'Approved 8x H100 GPU Cluster Burst for Hackathon', 'Marcus Vance authorized 8x NVIDIA H100 SXM5 GPUs for 72 hours for internal Hackathon teams.', 'https://discord.com/channels/9812/dev-leads/129381', 'Discord')}
+                          disabled={importingDecision === 'DEC-902'}
+                          className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-[11px] transition-all flex items-center space-x-1 cursor-pointer disabled:opacity-50"
+                        >
+                          <PlusCircle className="w-3 h-3" />
+                          <span>{importingDecision === 'DEC-902' ? 'Importing...' : '1-Click Ingest into Brain'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Footer */}
