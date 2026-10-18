@@ -569,17 +569,17 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-white">
+    <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-zinc-200 dark:selection:bg-zinc-800 selection:text-zinc-900 dark:selection:text-white transition-colors">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-5 right-5 z-50 bg-zinc-800 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 border border-white/20 animate-fade-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+        <div className="fixed top-5 right-5 z-50 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 border border-zinc-200 dark:border-white/20 animate-fade-in">
+          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
           <span className="text-sm font-medium">{toastMessage}</span>
         </div>
       )}
 
       {/* Top Header — Clean 56px Enterprise Bar */}
-      <header className="border-b border-white/[0.08] bg-[#09090b]/90 backdrop-blur-xl sticky top-0 z-40">
+      <header className="border-b border-zinc-200/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#09090b]/90 backdrop-blur-xl sticky top-0 z-40 transition-colors">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
           {/* Left: Brand + Workspace Breadcrumb */}
           <div className="flex items-center space-x-3 min-w-0">
