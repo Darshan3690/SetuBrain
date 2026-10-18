@@ -26,13 +26,16 @@ import {
   MessageSquare,
   Send,
   PlusCircle,
-  Lock
+  Lock,
+  Sun,
+  Moon
 } from 'lucide-react';
 import GraphTopologyMap from '@/components/GraphTopologyMap';
 import SpatialGraph3D from '@/components/SpatialGraph3D';
 import McpInspector from '@/components/McpInspector';
 import DashboardRoleBanner from '@/components/DashboardRoleBanner';
 import SetuLogo from '@/components/SetuLogo';
+import { useTheme } from '@/components/ThemeProvider';
 import {
   useUser,
   SignInButton,
@@ -290,6 +293,7 @@ function RbacGuard({
 }
 
 export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?: () => void }) {
+  const { theme, toggleTheme } = useTheme();
   const { user, isLoaded, isSignedIn } = useUser();
   const [activeRoleOverride, setActiveRoleOverride] = useState<string | null>(null);
   const activeRole = activeRoleOverride || (user?.publicMetadata?.role as string) || 'EMPLOYEE';
@@ -635,6 +639,20 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
               </button>
             </div>
 
+            {/* Theme Toggle (Dark/Light) */}
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle Dark and Light Mode"
+              className="p-1.5 rounded-lg bg-zinc-900/60 hover:bg-zinc-800 border border-white/[0.08] text-zinc-300 hover:text-white transition-all cursor-pointer"
+              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+              ) : (
+                <Moon className="w-3.5 h-3.5 text-sky-400" />
+              )}
+            </button>
+
             {/* Reset */}
             <button
               onClick={handleSeed}
@@ -739,6 +757,49 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
               >
                 {loading ? <RefreshCw className="w-4 h-4 animate-spin text-zinc-900" /> : <span>Query Graph</span>}
               </button>
+            </div>
+
+            {/* Quick Questions Starter Pills for Employees */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+              <span className="text-[11px] uppercase tracking-wider font-mono text-zinc-500 shrink-0">Quick Starters:</span>
+              {[
+                { label: '💳 Expense Monitor ($350 Cap)', q: 'Can I expense an ergonomic monitor?' },
+                { label: '✈️ Hotel Rate Shield ($250)', q: 'What is our hotel reimbursement limit?' },
+                { label: '💻 Software Purchase ($40 Cursor)', q: 'How do I purchase software?' },
+                { label: '⚡ Request GPU Quota (SME Route)', q: 'What is my GPU cluster quota in Engineering?' },
+              ].map((pill) => (
+                <button
+                  key={pill.label}
+                  onClick={() => {
+                    setQuery(pill.q);
+                    handleRunQuery(pill.q);
+                  }}
+                  className="shrink-0 inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-[#111114] hover:bg-zinc-800 border border-white/[0.08] hover:border-white/20 text-zinc-300 hover:text-white transition-all cursor-pointer font-medium shadow-sm"
+                >
+                  <span>{pill.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Active Employee Routed Escalations Tracker */}
+            <div className="p-3.5 rounded-xl bg-[#111114] border border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center space-x-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                <div>
+                  <span className="font-semibold text-white">My Routed Escalation #ESC-ENG-882</span>
+                  <span className="text-zinc-400 ml-2">Topic: GPU Cluster Quota (Engineering)</span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-zinc-400">Assigned SME: <strong className="text-zinc-200">Marcus Vance</strong></span>
+                <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold border ${
+                  isGpuApproved
+                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                    : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                }`}>
+                  {isGpuApproved ? '✓ APPROVED & IN GRAPH' : '⏳ PENDING SME SIGN-OFF'}
+                </span>
+              </div>
             </div>
 
             {/* Real Enterprise Scenarios 1-Click Strip */}

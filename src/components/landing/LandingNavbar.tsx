@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Zap, Building2, ChevronDown, Menu, X } from 'lucide-react';
+import { Zap, Building2, ChevronDown, Menu, X, Sun, Moon } from 'lucide-react';
 import { useUser, SignInButton, UserButton } from '@clerk/nextjs';
 import SetuLogo from '@/components/SetuLogo';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface LandingNavbarProps {
   onLaunchConsole: () => void;
@@ -16,6 +17,7 @@ export default function LandingNavbar({
   activeTenant = 'tenant_acme',
   onSelectTenant,
 }: LandingNavbarProps) {
+  const { theme, toggleTheme } = useTheme();
   const { isSignedIn } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [tenantDropdownOpen, setTenantDropdownOpen] = useState(false);
@@ -146,6 +148,20 @@ export default function LandingNavbar({
               <UserButton />
             </div>
           )}
+
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle Dark and Light Mode"
+            className="p-1.5 rounded-lg bg-zinc-900/90 border border-white/[0.08] text-zinc-300 hover:text-white transition-all cursor-pointer shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-sky-400" />
+            )}
+          </button>
 
           {/* Launch Console CTA */}
           <button

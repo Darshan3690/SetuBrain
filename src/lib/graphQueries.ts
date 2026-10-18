@@ -7,7 +7,7 @@ export interface TraversalResult {
   tenantId: string;
   tenantName: string;
   query: string;
-  trapType?: 'trap1_multihop' | 'trap2_superseded' | 'trap3_conflict' | 'trap3_conflict_resolved' | 'trap4_missing_knowledge' | 'trap4_sme_published' | 'trap5_provenance' | 'general';
+  trapType?: 'trap1_multihop' | 'trap2_superseded' | 'trap3_conflict' | 'trap3_conflict_resolved' | 'trap4_missing_knowledge' | 'trap4_sme_published' | 'trap5_provenance' | 'employee_onboarding' | 'general';
   summary: string;
   authoritativeAnswer: string;
   graphTraversalPath: string[];
@@ -527,16 +527,33 @@ Rather than hallucinating an allocation limit, SetuBrain has deterministically r
         compiledSkillMd: compiledSkill
       };
     } else {
+      const isGreeting = /^(hi|hello|hey|who are you|what can you do|help|howdy|good morning|good afternoon)/i.test(naturalQuery.trim());
+      
       finalResult = {
         tenantId: validTenant,
         tenantName: tenantMeta.name,
         query: naturalQuery,
-        trapType: 'general',
-        summary: `Graph query executed against ${tenantMeta.name}.`,
-        authoritativeAnswer: `Queried the ${tenantMeta.name} knowledge graph for "${naturalQuery}". Select one of the pre-configured trap demonstrations to inspect deep multi-hop paths, supersessions, or curator conflict resolution.`,
-        graphTraversalPath: [`Department(Finance)`, `Tenant(${validTenant})`],
-        nodesInvolved: tenantData.nodes.slice(0, 3),
-        edgesInvolved: tenantData.edges.slice(0, 2)
+        trapType: isGreeting ? 'employee_onboarding' : 'general',
+        summary: isGreeting 
+          ? `SetuBrain Authoritative Enterprise Knowledge Bridge for ${tenantMeta.name}.`
+          : `Graph query executed against ${tenantMeta.name}.`,
+        authoritativeAnswer: isGreeting
+          ? `👋 **Hi! I am SetuBrain (सेतु)**, your verified operations and policy intelligence bridge for **${tenantMeta.name}**.\n\n` +
+            `Instead of searching outdated wikis or waiting for IT tickets, ask me real operational questions:\n\n` +
+            `- 💳 **Software & Subscriptions**: Pre-approval limits, Ramp policies, signing authority.\n` +
+            `- ✈️ **Travel & Expenses**: Hotel caps via Navan, meal policies, per-diem rules.\n` +
+            `- 🔒 **Security & Hardware**: Laptop offboarding wipe, equipment reimbursement.\n` +
+            `- 👤 **Department SMEs**: Instant routing to designated owners (e.g. Priya Sharma, Marcus Vance).\n\n` +
+            `*Try clicking any of the Quick Questions or Scenario presets below to trace the live graph!*`
+          : `Queried the ${tenantMeta.name} knowledge graph for "${naturalQuery}". Select one of the pre-configured trap demonstrations or quick question pills below to inspect verified multi-hop paths, supersessions, and SME routing.`,
+        graphTraversalPath: [
+          `Tenant(${validTenant})`,
+          `Department(DEPT-ENG)`,
+          `Department(DEPT-FIN)`,
+          `Department(DEPT-HR)`
+        ],
+        nodesInvolved: tenantData.nodes.slice(0, 4),
+        edgesInvolved: tenantData.edges.slice(0, 3)
       };
     }
   }

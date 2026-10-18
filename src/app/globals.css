@@ -5,6 +5,11 @@
   --foreground: #f8fafc;
 }
 
+html.light {
+  --background: #f8fafc;
+  --foreground: #09090b;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -13,13 +18,89 @@
 }
 
 body {
-  background-color: #030712;
-  color: #f8fafc;
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
   background-image: 
     radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
     radial-gradient(circle at 100% 20%, rgba(6, 182, 212, 0.04) 0%, transparent 40%);
+}
+
+html.light body {
+  background-color: #f8fafc;
+  color: #09090b;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 100% 20%, rgba(6, 182, 212, 0.03) 0%, transparent 40%);
+}
+
+/* Light mode overrides for high-level cards */
+html.light .bg-\[\#09090b\]\/90,
+html.light .bg-\[\#060608\]\/85,
+html.light .bg-\[\#060608\],
+html.light .bg-\[\#030712\] {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  color: #09090b !important;
+}
+
+html.light .bg-\[\#111114\] {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light .bg-\[\#0c0c0e\] {
+  background-color: #f1f5f9 !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+  color: #1e293b !important;
+}
+
+html.light .text-white {
+  color: #0f172a !important;
+}
+
+html.light .text-zinc-100,
+html.light .text-zinc-200 {
+  color: #1e293b !important;
+}
+
+html.light .text-zinc-300,
+html.light .text-zinc-400 {
+  color: #475569 !important;
+}
+
+html.light .text-zinc-500 {
+  color: #64748b !important;
+}
+
+html.light .border-white\/\[0\.08\],
+html.light .border-white\/\[0\.06\],
+html.light .border-white\/\[0\.07\],
+html.light .border-white\/\[0\.1\] {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light input,
+html.light textarea,
+html.light select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+html.light .bg-zinc-900\/80,
+html.light .bg-zinc-900\/60,
+html.light .bg-zinc-900 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light .bg-zinc-800 {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
 /* Glassmorphic Spatial Panel */
