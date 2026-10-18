@@ -11,19 +11,30 @@ const ROLES = [
   { id: 'COMPANY_ADMINISTRATOR', label: 'Admin' },
 ];
 
-export default function DashboardRoleBanner({ onRoleChange }: { onRoleChange?: (newRole: string) => void }) {
+export default function DashboardRoleBanner({
+  currentRole: controlledRole,
+  onRoleChange,
+}: {
+  currentRole?: string;
+  onRoleChange?: (newRole: string) => void;
+}) {
   const { user, isLoaded, isSignedIn } = useUser();
   const [updating, setUpdating] = useState(false);
   const [activeRoleOverride, setActiveRoleOverride] = useState<string | null>(null);
 
   if (!isLoaded) return null;
 
-  const currentRole = activeRoleOverride || (user?.publicMetadata?.role as string) || 'EMPLOYEE';
+  const currentRole =
+    controlledRole ||
+    activeRoleOverride ||
+    (user?.publicMetadata?.role as string) ||
+    'EMPLOYEE';
 
   const handleRoleSelect = async (newRole: string) => {
     if (newRole === currentRole) return;
     setUpdating(true);
     setActiveRoleOverride(newRole);
+    if (onRoleChange) onRoleChange(newRole);
     try {
       const res = await fetch('/api/user/role', {
         method: 'POST',
@@ -31,8 +42,8 @@ export default function DashboardRoleBanner({ onRoleChange }: { onRoleChange?: (
         body: JSON.stringify({ role: newRole }),
       });
       const data = await res.json();
-      if (data.ok) {
-        if (onRoleChange) onRoleChange(newRole);
+      if (!data.ok) {
+        console.warn('Role sync warning:', data);
       }
     } catch (e) {
       console.error('Role update error:', e);

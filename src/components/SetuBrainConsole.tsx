@@ -25,7 +25,8 @@ import {
   Crown,
   MessageSquare,
   Send,
-  PlusCircle
+  PlusCircle,
+  Lock
 } from 'lucide-react';
 import GraphTopologyMap from '@/components/GraphTopologyMap';
 import SpatialGraph3D from '@/components/SpatialGraph3D';
@@ -234,9 +235,72 @@ function renderHighlightedHop(hop: string) {
   );
 }
 
+const ROLE_DISPLAY_NAMES: Record<string, string> = {
+  EMPLOYEE: 'Employee',
+  DEPARTMENT_SME: 'SME',
+  KNOWLEDGE_MANAGER: 'KM',
+  COMPANY_ADMINISTRATOR: 'Admin',
+};
+
+const TAB_PERMISSIONS: Record<string, string[]> = {
+  engine: ['EMPLOYEE', 'DEPARTMENT_SME', 'KNOWLEDGE_MANAGER', 'COMPANY_ADMINISTRATOR'],
+  departments: ['EMPLOYEE', 'DEPARTMENT_SME', 'KNOWLEDGE_MANAGER', 'COMPANY_ADMINISTRATOR'],
+  memory: ['EMPLOYEE', 'DEPARTMENT_SME', 'KNOWLEDGE_MANAGER', 'COMPANY_ADMINISTRATOR'],
+  inbox: ['DEPARTMENT_SME', 'COMPANY_ADMINISTRATOR'],
+  curator: ['KNOWLEDGE_MANAGER', 'COMPANY_ADMINISTRATOR'],
+  benchmark: ['KNOWLEDGE_MANAGER', 'COMPANY_ADMINISTRATOR'],
+  mcp: ['COMPANY_ADMINISTRATOR'],
+  admin: ['COMPANY_ADMINISTRATOR'],
+};
+
+function RbacGuard({
+  allowedRoles,
+  currentRole,
+  moduleName,
+  children,
+}: {
+  allowedRoles: string[];
+  currentRole: string;
+  moduleName: string;
+  children: React.ReactNode;
+}) {
+  if (!allowedRoles.includes(currentRole)) {
+    const roleLabel = ROLE_DISPLAY_NAMES[currentRole] || currentRole;
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl bg-[#111114] border border-white/[0.08] shadow-2xl p-8 space-y-4 my-6">
+        <div className="w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+          <Lock className="w-7 h-7" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-zinc-200">Access Restricted</h2>
+          <p className="text-xs text-zinc-400 max-w-sm">
+            Your current role (<span className="font-mono text-zinc-200 font-semibold">{roleLabel}</span>) does not have permission to view {moduleName}.
+          </p>
+        </div>
+        <div className="pt-2">
+          <span className="text-[11px] text-zinc-500 font-mono bg-zinc-900 px-3 py-1.5 rounded-lg border border-white/[0.06]">
+            Required Role: {allowedRoles.map((r) => ROLE_DISPLAY_NAMES[r] || r).join(' or ')}
+          </span>
+        </div>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
 export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?: () => void }) {
-  const { isSignedIn } = useUser();
+  const { user, isLoaded, isSignedIn } = useUser();
+  const [activeRoleOverride, setActiveRoleOverride] = useState<string | null>(null);
+  const activeRole = activeRoleOverride || (user?.publicMetadata?.role as string) || 'EMPLOYEE';
   const [activeTab, setActiveTab] = useState<'engine' | 'inbox' | 'curator' | 'departments' | 'benchmark' | 'memory' | 'mcp' | 'admin'>('engine');
+
+  // Auto-switch to engine if activeTab is not allowed for the new role
+  useEffect(() => {
+    const allowed = TAB_PERMISSIONS[activeTab]?.includes(activeRole);
+    if (!allowed) {
+      setActiveTab('engine');
+    }
+  }, [activeRole, activeTab]);
   const [tenant, setTenant] = useState<'tenant_acme' | 'tenant_globex'>('tenant_acme');
   const [query, setQuery] = useState('How do I purchase software?');
   const [loading, setLoading] = useState(false);
@@ -605,15 +669,17 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
         {/* Tab Navigation — Linear/Vercel-style underline tabs */}
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 flex items-center gap-1 overflow-x-auto pb-0 pt-0 scrollbar-none border-t border-white/[0.06] w-full flex-nowrap">
           {[
-            { key: 'engine' as const, icon: <GitBranch className="w-3.5 h-3.5" />, label: 'Knowledge Engine' },
-            { key: 'inbox' as const, icon: <Inbox className="w-3.5 h-3.5" />, label: 'SME Inbox', badge: !isGpuApproved ? '1' : undefined, badgeColor: 'bg-amber-500/20 text-amber-400 border border-amber-500/30' },
-            { key: 'curator' as const, icon: <ShieldCheck className="w-3.5 h-3.5" />, label: 'Curator Agent', badge: curatorStatus !== 'RESOLVED' ? '!' : undefined, badgeColor: curatorStatus !== 'RESOLVED' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' },
-            { key: 'departments' as const, icon: <Building2 className="w-3.5 h-3.5" />, label: 'Departments' },
-            { key: 'benchmark' as const, icon: <Award className="w-3.5 h-3.5" />, label: 'Benchmark', badge: '100%', badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' },
-            { key: 'memory' as const, icon: <History className="w-3.5 h-3.5" />, label: 'Memory Log', badge: episodes.length > 0 ? String(episodes.length) : undefined, badgeColor: 'bg-zinc-800 text-zinc-400 border border-white/[0.06]' },
-            { key: 'mcp' as const, icon: <Terminal className="w-3.5 h-3.5" />, label: 'MCP Server' },
-            { key: 'admin' as const, icon: <Crown className="w-3.5 h-3.5" />, label: 'Admin Console' },
-          ].map((tab) => (
+            { key: 'engine' as const, icon: <GitBranch className="w-3.5 h-3.5" />, label: 'Knowledge Engine', allowedRoles: TAB_PERMISSIONS.engine },
+            { key: 'inbox' as const, icon: <Inbox className="w-3.5 h-3.5" />, label: 'SME Inbox', badge: !isGpuApproved ? '1' : undefined, badgeColor: 'bg-amber-500/20 text-amber-400 border border-amber-500/30', allowedRoles: TAB_PERMISSIONS.inbox },
+            { key: 'curator' as const, icon: <ShieldCheck className="w-3.5 h-3.5" />, label: 'Curator Agent', badge: curatorStatus !== 'RESOLVED' ? '!' : undefined, badgeColor: curatorStatus !== 'RESOLVED' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', allowedRoles: TAB_PERMISSIONS.curator },
+            { key: 'departments' as const, icon: <Building2 className="w-3.5 h-3.5" />, label: 'Departments', allowedRoles: TAB_PERMISSIONS.departments },
+            { key: 'benchmark' as const, icon: <Award className="w-3.5 h-3.5" />, label: 'Benchmark', badge: '100%', badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', allowedRoles: TAB_PERMISSIONS.benchmark },
+            { key: 'memory' as const, icon: <History className="w-3.5 h-3.5" />, label: 'Memory Log', badge: episodes.length > 0 ? String(episodes.length) : undefined, badgeColor: 'bg-zinc-800 text-zinc-400 border border-white/[0.06]', allowedRoles: TAB_PERMISSIONS.memory },
+            { key: 'mcp' as const, icon: <Terminal className="w-3.5 h-3.5" />, label: 'MCP Server', allowedRoles: TAB_PERMISSIONS.mcp },
+            { key: 'admin' as const, icon: <Crown className="w-3.5 h-3.5" />, label: 'Admin Console', allowedRoles: TAB_PERMISSIONS.admin },
+          ]
+            .filter((tab) => tab.allowedRoles.includes(activeRole))
+            .map((tab) => (
             <button
               key={tab.key}
               onClick={() => {
@@ -643,7 +709,10 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
       {/* Main Content Area */}
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 py-5 flex-1 w-full space-y-5">
         {/* Compact Workspace Context Bar */}
-        <DashboardRoleBanner />
+        <DashboardRoleBanner
+          currentRole={activeRole}
+          onRoleChange={(newRole) => setActiveRoleOverride(newRole)}
+        />
         {/* ====================================================================== */}
         {/* TAB 1: KNOWLEDGE ENGINE & 5 TRAPS                                      */}
         {/* ====================================================================== */}
@@ -1036,205 +1105,217 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
         {/* TAB 2: SME EXPERT INBOX (CLOSED LEARNING LOOP)                        */}
         {/* ====================================================================== */}
         {activeTab === 'inbox' && (
-          <div className="space-y-5">
-            <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-lg bg-zinc-800 text-zinc-300 border border-white/[0.08] flex items-center justify-center font-bold text-xs">
-                    MV
+          <RbacGuard allowedRoles={TAB_PERMISSIONS.inbox} currentRole={activeRole} moduleName="SME Expert Inbox">
+            <div className="space-y-5">
+              <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-lg bg-zinc-800 text-zinc-300 border border-white/[0.08] flex items-center justify-center font-bold text-xs">
+                      MV
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-white">SME Expert Inbox: Marcus Vance</h2>
+                      <p className="text-xs text-zinc-400">
+                        Principal Infra Architect • Engineering Department • <code className="text-zinc-300 font-mono">marcus@acme.com</code>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-base font-semibold text-white">SME Expert Inbox: Marcus Vance</h2>
+                  <span className={`text-xs px-3 py-1 rounded-full font-mono border ${
+                    isGpuApproved
+                      ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                      : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                  }`}>
+                    {isGpuApproved ? 'Procedure Published to Graph' : '1 Escalation Awaiting Approval'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Escalated Item Card */}
+              <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-white/[0.08]">
+                      ESCALATION #ESC-ENG-882
+                    </span>
+                    <h3 className="text-base font-semibold text-white">
+                      &ldquo;How do I request GPU cluster quota for a hackathon in Engineering?&rdquo;
+                    </h3>
                     <p className="text-xs text-zinc-400">
-                      Principal Infra Architect • Engineering Department • <code className="text-zinc-300 font-mono">marcus@acme.com</code>
+                      Escalated by SetuBrain Deterministic Abstention Handler (Trap 4) due to missing procedure in Department(DEPT-ENG).
                     </p>
                   </div>
-                </div>
-                <span className={`text-xs px-3 py-1 rounded-full font-mono border ${
-                  isGpuApproved
-                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                    : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
-                }`}>
-                  {isGpuApproved ? 'Procedure Published to Graph' : '1 Escalation Awaiting Approval'}
-                </span>
-              </div>
-            </div>
-
-            {/* Escalated Item Card */}
-            <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-4">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-white/[0.08]">
-                    ESCALATION #ESC-ENG-882
-                  </span>
-                  <h3 className="text-base font-semibold text-white">
-                    &ldquo;How do I request GPU cluster quota for a hackathon in Engineering?&rdquo;
-                  </h3>
-                  <p className="text-xs text-zinc-400">
-                    Escalated by SetuBrain Deterministic Abstention Handler (Trap 4) due to missing procedure in Department(DEPT-ENG).
-                  </p>
-                </div>
-                <span className="text-xs text-zinc-500 font-mono">Oct 15, 2026</span>
-              </div>
-
-              <div className="bg-[#0c0c0e] p-4 rounded-lg border border-white/[0.06] space-y-2.5 text-xs">
-                <div className="font-semibold text-zinc-200">Drafted Corporate Policy & Procedure for Approval:</div>
-                <div className="space-y-1 text-zinc-400">
-                  <div><strong className="text-zinc-300">Procedure ID</strong>: <code>PROC-ENG-GPU</code> (&ldquo;GPU Cluster Quota & AI Compute Allocation Request&rdquo;)</div>
-                  <div><strong className="text-zinc-300">Governing Policy</strong>: <code>POL-ENG-GPU-2026</code> (Version 1.0, APPROVED)</div>
-                  <div><strong className="text-zinc-300">Primary Application</strong>: Run:ai Orchestrator (<code>https://runai.infra.acme.internal</code>)</div>
-                  <div><strong className="text-zinc-300">Approved Limit</strong>: Up to 8x NVIDIA H100 GPUs auto-approved for 72 hours for hackathons.</div>
-                  <div><strong className="text-zinc-300">Escalation Threshold</strong>: Requests exceeding 8 GPUs require Marcus Vance authorization.</div>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
-                <div className="text-xs text-zinc-400">
-                  {isGpuApproved ? (
-                    <span className="text-emerald-400 flex items-center space-x-1 font-semibold">
-                      <Check className="w-4 h-4" />
-                      <span>Live in FalkorDB (Cypher node active in tenant_acme)</span>
-                    </span>
-                  ) : (
-                    <span>Click below to publish this procedure live into the knowledge graph.</span>
-                  )}
+                  <span className="text-xs text-zinc-500 font-mono">Oct 15, 2026</span>
                 </div>
 
-                <div className="flex items-center space-x-3 w-full sm:w-auto justify-end">
-                  {!isGpuApproved ? (
-                    <button
-                      onClick={handleApproveGpuProcedure}
-                      disabled={loading}
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 cursor-pointer"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>Approve & Publish GPU Procedure to Graph as Marcus Vance</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setActiveTab('engine');
-                        setQuery('What is my GPU cluster quota in Engineering?');
-                        handleRunQuery('What is my GPU cluster quota in Engineering?');
-                      }}
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 cursor-pointer"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      <span>Test GPU Cluster Quota in Engine →</span>
-                    </button>
-                  )}
+                <div className="bg-[#0c0c0e] p-4 rounded-lg border border-white/[0.06] space-y-2.5 text-xs">
+                  <div className="font-semibold text-zinc-200">Drafted Corporate Policy & Procedure for Approval:</div>
+                  <div className="space-y-1 text-zinc-400">
+                    <div><strong className="text-zinc-300">Procedure ID</strong>: <code>PROC-ENG-GPU</code> (&ldquo;GPU Cluster Quota & AI Compute Allocation Request&rdquo;)</div>
+                    <div><strong className="text-zinc-300">Governing Policy</strong>: <code>POL-ENG-GPU-2026</code> (Version 1.0, APPROVED)</div>
+                    <div><strong className="text-zinc-300">Primary Application</strong>: Run:ai Orchestrator (<code>https://runai.infra.acme.internal</code>)</div>
+                    <div><strong className="text-zinc-300">Approved Limit</strong>: Up to 8x NVIDIA H100 GPUs auto-approved for 72 hours for hackathons.</div>
+                    <div><strong className="text-zinc-300">Escalation Threshold</strong>: Requests exceeding 8 GPUs require Marcus Vance authorization.</div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+                  <div className="text-xs text-zinc-400">
+                    {isGpuApproved ? (
+                      <span className="text-emerald-400 flex items-center space-x-1 font-semibold">
+                        <Check className="w-4 h-4" />
+                        <span>Live in FalkorDB (Cypher node active in tenant_acme)</span>
+                      </span>
+                    ) : (
+                      <span>Click below to publish this procedure live into the knowledge graph.</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-3 w-full sm:w-auto justify-end">
+                    {!isGpuApproved ? (
+                      <button
+                        onClick={handleApproveGpuProcedure}
+                        disabled={loading}
+                        className={`w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 cursor-pointer ${
+                          activeRole === 'COMPANY_ADMINISTRATOR'
+                            ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-500/20'
+                            : 'bg-zinc-100 hover:bg-white text-zinc-950'
+                        }`}
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>
+                          {activeRole === 'COMPANY_ADMINISTRATOR'
+                            ? 'Approve & Publish (Admin Override) → Graph'
+                            : 'Approve & Publish GPU Procedure to Graph as Marcus Vance'}
+                        </span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setActiveTab('engine');
+                          setQuery('What is my GPU cluster quota in Engineering?');
+                          handleRunQuery('What is my GPU cluster quota in Engineering?');
+                        }}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>Test GPU Cluster Quota in Engine →</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </RbacGuard>
         )}
 
         {/* ====================================================================== */}
         {/* TAB 3: CURATOR AGENT (CONFLICT RESOLUTION)                            */}
         {/* ====================================================================== */}
         {activeTab === 'curator' && (
-          <div className="space-y-5">
-            <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-semibold text-white flex items-center space-x-2">
-                    <ShieldCheck className="w-5 h-5 text-rose-400" />
-                    <span>Curator Agent • Contradiction Resolution Center</span>
-                  </h2>
-                  <p className="text-xs text-zinc-400">
-                    Track 02 Agent Coordination: Continuous scan for semantic contradictions across procedures and policies.
-                  </p>
-                </div>
-                <span className={`text-xs px-3 py-1 rounded-full font-mono border ${
-                  curatorStatus === 'RESOLVED'
-                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                    : 'bg-rose-500/10 text-rose-300 border-rose-500/20'
-                }`}>
-                  {curatorStatus === 'RESOLVED' ? 'All Conflicts Resolved' : '1 Active Conflict Detected'}
-                </span>
-              </div>
-            </div>
-
-            {/* Conflict Resolution Card */}
-            <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-4">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-800/40">
-                    CONFLICT #CONF-01 • HIGH RISK
+          <RbacGuard allowedRoles={TAB_PERMISSIONS.curator} currentRole={activeRole} moduleName="Curator Agent (Conflict Resolution)">
+            <div className="space-y-5">
+              <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-base font-semibold text-white flex items-center space-x-2">
+                      <ShieldCheck className="w-5 h-5 text-rose-400" />
+                      <span>Curator Agent • Contradiction Resolution Center</span>
+                    </h2>
+                    <p className="text-xs text-zinc-400">
+                      Track 02 Agent Coordination: Continuous scan for semantic contradictions across procedures and policies.
+                    </p>
+                  </div>
+                  <span className={`text-xs px-3 py-1 rounded-full font-mono border ${
+                    curatorStatus === 'RESOLVED'
+                      ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                      : 'bg-rose-500/10 text-rose-300 border-rose-500/20'
+                  }`}>
+                    {curatorStatus === 'RESOLVED' ? 'All Conflicts Resolved' : '1 Active Conflict Detected'}
                   </span>
-                  <h3 className="text-base font-semibold text-white">
-                    Endpoint Offboarding: Zero-Trust Wipe vs. 7-Day HR Grace Period
-                  </h3>
-                  <p className="text-xs text-zinc-400">
-                    Governing Procedure: <code>PROC-SEC-03</code> (Remote Laptop Wipe & Contractor Offboarding)
-                  </p>
                 </div>
               </div>
 
-              {/* Side-by-side Contradiction View */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-[#0c0c0e] border border-rose-900/30 space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-rose-300">Security Mandate (POL-SEC-101)</span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800/40">0-Hour Wipe</span>
-                  </div>
-                  <p className="text-zinc-300 leading-relaxed">
-                    &ldquo;Security requires immediate 0-hour remote cryptographic wipe via CrowdStrike Falcon the moment a contractor or employee offboarding ticket is filed.&rdquo;
-                  </p>
-                  <div className="text-[10px] text-zinc-500 font-mono">Owner: Elena Rostova (Head of InfoSec)</div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-[#0c0c0e] border border-amber-900/30 space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-amber-300">HR Grace Period (POL-HR-202)</span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800/40">7-Day Wait</span>
-                  </div>
-                  <p className="text-zinc-300 leading-relaxed">
-                    &ldquo;IT and Security must wait 7 calendar days after final employment date before wiping laptops so departing staff can retrieve personal tax documents.&rdquo;
-                  </p>
-                  <div className="text-[10px] text-zinc-500 font-mono">Owner: David Kim (HR Compliance Lead)</div>
-                </div>
-              </div>
-
-              {/* Resolution Action */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
-                <div className="text-xs text-zinc-400">
-                  {curatorStatus === 'RESOLVED' ? (
-                    <span className="text-emerald-400 font-semibold flex items-center space-x-1">
-                      <Check className="w-4 h-4" />
-                      <span>Resolution Active: POL-SEC-101 formally marked as superseding POL-HR-202</span>
+              {/* Conflict Resolution Card */}
+              <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-800/40">
+                      CONFLICT #CONF-01 • HIGH RISK
                     </span>
-                  ) : (
-                    <span>Automated agent execution is currently halted on laptop wipe until resolved.</span>
-                  )}
+                    <h3 className="text-base font-semibold text-white">
+                      Endpoint Offboarding: Zero-Trust Wipe vs. 7-Day HR Grace Period
+                    </h3>
+                    <p className="text-xs text-zinc-400">
+                      Governing Procedure: <code>PROC-SEC-03</code> (Remote Laptop Wipe & Contractor Offboarding)
+                    </p>
+                  </div>
                 </div>
 
-                <div className="w-full sm:w-auto flex justify-end">
-                  {curatorStatus === 'DETECTED' ? (
-                    <button
-                      onClick={handleResolveConflict}
-                      disabled={loading}
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 cursor-pointer"
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      <span>Resolve Conflict (Enforce Security Zero-Trust Precedence)</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setActiveTab('engine');
-                        setQuery('How do we handle laptop wipe on offboarding?');
-                        handleRunQuery('How do we handle laptop wipe on offboarding?');
-                      }}
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 cursor-pointer"
-                    >
-                      <span>Test Resolved Laptop Wipe in Engine →</span>
-                    </button>
-                  )}
+                {/* Side-by-side Contradiction View */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-[#0c0c0e] border border-rose-900/30 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-rose-300">Security Mandate (POL-SEC-101)</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800/40">0-Hour Wipe</span>
+                    </div>
+                    <p className="text-zinc-300 leading-relaxed">
+                      &ldquo;Security requires immediate 0-hour remote cryptographic wipe via CrowdStrike Falcon the moment a contractor or employee offboarding ticket is filed.&rdquo;
+                    </p>
+                    <div className="text-[10px] text-zinc-500 font-mono">Owner: Elena Rostova (Head of InfoSec)</div>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-[#0c0c0e] border border-amber-900/30 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-amber-300">HR Grace Period (POL-HR-202)</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800/40">7-Day Wait</span>
+                    </div>
+                    <p className="text-zinc-300 leading-relaxed">
+                      &ldquo;IT and Security must wait 7 calendar days after final employment date before wiping laptops so departing staff can retrieve personal tax documents.&rdquo;
+                    </p>
+                    <div className="text-[10px] text-zinc-500 font-mono">Owner: David Kim (HR Compliance Lead)</div>
+                  </div>
+                </div>
+
+                {/* Resolution Action */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
+                  <div className="text-xs text-zinc-400">
+                    {curatorStatus === 'RESOLVED' ? (
+                      <span className="text-emerald-400 font-semibold flex items-center space-x-1">
+                        <Check className="w-4 h-4" />
+                        <span>Resolution Active: POL-SEC-101 formally marked as superseding POL-HR-202</span>
+                      </span>
+                    ) : (
+                      <span>Automated agent execution is currently halted on laptop wipe until resolved.</span>
+                    )}
+                  </div>
+
+                  <div className="w-full sm:w-auto flex justify-end">
+                    {curatorStatus === 'DETECTED' ? (
+                      <button
+                        onClick={handleResolveConflict}
+                        disabled={loading}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>Resolve Conflict (Enforce Security Zero-Trust Precedence)</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setActiveTab('engine');
+                          setQuery('How do we handle laptop wipe on offboarding?');
+                          handleRunQuery('How do we handle laptop wipe on offboarding?');
+                        }}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                      >
+                        <span>Test Resolved Laptop Wipe in Engine →</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </RbacGuard>
         )}
 
         {/* ====================================================================== */}
@@ -1318,89 +1399,91 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
         {/* TAB 5: 15-QUESTION BENCHMARK RUNNER                                   */}
         {/* ====================================================================== */}
         {activeTab === 'benchmark' && (
-          <div className="space-y-5">
-            <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-base font-semibold text-white flex items-center space-x-2">
-                    <Award className="w-5 h-5 text-emerald-400" />
-                    <span>Gold Standard 15-Query Enterprise Benchmark</span>
-                  </h2>
-                  <p className="text-xs text-zinc-400">
-                    Direct side-by-side comparison across all 5 failure modes: Naive Vector RAG vs. SetuBrain FalkorDB.
-                  </p>
+          <RbacGuard allowedRoles={TAB_PERMISSIONS.benchmark} currentRole={activeRole} moduleName="Retrieval Benchmark Suite">
+            <div className="space-y-5">
+              <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-base font-semibold text-white flex items-center space-x-2">
+                      <Award className="w-5 h-5 text-emerald-400" />
+                      <span>Gold Standard 15-Query Enterprise Benchmark</span>
+                    </h2>
+                    <p className="text-xs text-zinc-400">
+                      Direct side-by-side comparison across all 5 failure modes: Naive Vector RAG vs. SetuBrain FalkorDB.
+                    </p>
+                  </div>
+                </div>
+
+                {/* KPI Scorecards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-2">
+                  <div className="p-4 rounded-lg bg-rose-950/20 border border-rose-900/30 text-center space-y-1">
+                    <div className="text-[11px] uppercase tracking-wider text-rose-400 font-mono font-semibold">Naive Vector RAG</div>
+                    <div className="text-3xl font-black text-rose-400">26.7%</div>
+                    <div className="text-[11px] text-zinc-400">4 / 15 Passed (Hallucinations on traps)</div>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-emerald-950/20 border border-emerald-900/30 text-center space-y-1">
+                    <div className="text-[11px] uppercase tracking-wider text-emerald-400 font-mono font-semibold">SetuBrain FalkorDB</div>
+                    <div className="text-3xl font-black text-emerald-400">100.0%</div>
+                    <div className="text-[11px] text-zinc-400">15 / 15 Passed (Deterministic accuracy)</div>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-zinc-900/80 border border-white/[0.08] text-center space-y-1">
+                    <div className="text-[11px] uppercase tracking-wider text-zinc-300 font-mono font-semibold">Avg Cypher Latency</div>
+                    <div className="text-3xl font-black text-white">14.3 ms</div>
+                    <div className="text-[11px] text-zinc-400">Native sub-millisecond in-memory graph</div>
+                  </div>
                 </div>
               </div>
 
-              {/* KPI Scorecards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-2">
-                <div className="p-4 rounded-lg bg-rose-950/20 border border-rose-900/30 text-center space-y-1">
-                  <div className="text-[11px] uppercase tracking-wider text-rose-400 font-mono font-semibold">Naive Vector RAG</div>
-                  <div className="text-3xl font-black text-rose-400">26.7%</div>
-                  <div className="text-[11px] text-zinc-400">4 / 15 Passed (Hallucinations on traps)</div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-emerald-950/20 border border-emerald-900/30 text-center space-y-1">
-                  <div className="text-[11px] uppercase tracking-wider text-emerald-400 font-mono font-semibold">SetuBrain FalkorDB</div>
-                  <div className="text-3xl font-black text-emerald-400">100.0%</div>
-                  <div className="text-[11px] text-zinc-400">15 / 15 Passed (Deterministic accuracy)</div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-zinc-900/80 border border-white/[0.08] text-center space-y-1">
-                  <div className="text-[11px] uppercase tracking-wider text-zinc-300 font-mono font-semibold">Avg Cypher Latency</div>
-                  <div className="text-3xl font-black text-white">14.3 ms</div>
-                  <div className="text-[11px] text-zinc-400">Native sub-millisecond in-memory graph</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Benchmark Table */}
-            <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-4">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-white/[0.07] text-zinc-400 uppercase text-[10px] font-mono tracking-wider">
-                      <th className="pb-3 w-10">#</th>
-                      <th className="pb-3 w-40">Category</th>
-                      <th className="pb-3">Query & Ground Truth</th>
-                      <th className="pb-3 w-64">Vector RAG Baseline</th>
-                      <th className="pb-3 w-64">SetuBrain FalkorDB</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.06]">
-                    {benchmarks.map((item) => (
-                      <tr key={item.id} className="hover:bg-zinc-900/40 transition-all">
-                        <td className="py-3.5 font-mono text-zinc-500">{item.id}</td>
-                        <td className="py-3.5 font-mono text-zinc-400 text-[11px]">{item.category}</td>
-                        <td className="py-3.5 pr-4 space-y-1">
-                          <div className="font-semibold text-white text-xs">{item.query}</div>
-                          <div className="text-[11px] text-zinc-400">
-                            <span className="text-zinc-300 font-semibold font-mono">Truth:</span> {item.groundTruth}
-                          </div>
-                        </td>
-                        <td className="py-3.5 pr-4 space-y-1">
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-rose-950/60 text-rose-400 border border-rose-800/40 text-[10px] font-mono font-bold">
-                            <XCircle className="w-3 h-3" />
-                            <span>FAIL (0/1)</span>
-                          </span>
-                          <div className="text-[11px] text-zinc-300">{item.vectorRag.returned}</div>
-                          <div className="text-[10px] text-rose-400/80 italic">{item.vectorRag.failureReason}</div>
-                        </td>
-                        <td className="py-3.5 space-y-1">
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-mono font-bold">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>PASS (1/1)</span>
-                          </span>
-                          <div className="text-[11px] text-zinc-200">{item.setuBrain.returned}</div>
-                          <div className="text-[10px] text-emerald-400/80 font-mono">↳ {item.setuBrain.resolutionMechanic}</div>
-                        </td>
+              {/* Benchmark Table */}
+              <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-white/[0.07] text-zinc-400 uppercase text-[10px] font-mono tracking-wider">
+                        <th className="pb-3 w-10">#</th>
+                        <th className="pb-3 w-40">Category</th>
+                        <th className="pb-3">Query & Ground Truth</th>
+                        <th className="pb-3 w-64">Vector RAG Baseline</th>
+                        <th className="pb-3 w-64">SetuBrain FalkorDB</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.06]">
+                      {benchmarks.map((item) => (
+                        <tr key={item.id} className="hover:bg-zinc-900/40 transition-all">
+                          <td className="py-3.5 font-mono text-zinc-500">{item.id}</td>
+                          <td className="py-3.5 font-mono text-zinc-400 text-[11px]">{item.category}</td>
+                          <td className="py-3.5 pr-4 space-y-1">
+                            <div className="font-semibold text-white text-xs">{item.query}</div>
+                            <div className="text-[11px] text-zinc-400">
+                              <span className="text-zinc-300 font-semibold font-mono">Truth:</span> {item.groundTruth}
+                            </div>
+                          </td>
+                          <td className="py-3.5 pr-4 space-y-1">
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-rose-950/60 text-rose-400 border border-rose-800/40 text-[10px] font-mono font-bold">
+                              <XCircle className="w-3 h-3" />
+                              <span>FAIL (0/1)</span>
+                            </span>
+                            <div className="text-[11px] text-zinc-300">{item.vectorRag.returned}</div>
+                            <div className="text-[10px] text-rose-400/80 italic">{item.vectorRag.failureReason}</div>
+                          </td>
+                          <td className="py-3.5 space-y-1">
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 text-[10px] font-mono font-bold">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>PASS (1/1)</span>
+                            </span>
+                            <div className="text-[11px] text-zinc-200">{item.setuBrain.returned}</div>
+                            <div className="text-[10px] text-emerald-400/80 font-mono">↳ {item.setuBrain.resolutionMechanic}</div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
+          </RbacGuard>
         )}
 
         {/* ====================================================================== */}
@@ -1471,15 +1554,20 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
         {/* ====================================================================== */}
         {/* TAB 7: MCP TOOL INSPECTOR (TRACK 01)                                   */}
         {/* ====================================================================== */}
-        {activeTab === 'mcp' && <McpInspector />}
+        {activeTab === 'mcp' && (
+          <RbacGuard allowedRoles={TAB_PERMISSIONS.mcp} currentRole={activeRole} moduleName="Model Context Protocol (MCP) Server">
+            <McpInspector />
+          </RbacGuard>
+        )}
 
         {/* ====================================================================== */}
         {/* TAB 8: OWNER & ADMIN CONSOLE (LIVE INGEST & POLICY CURATION)          */}
         {/* ====================================================================== */}
         {activeTab === 'admin' && (
-          <div className="space-y-6">
-            {/* Header Banner */}
-            <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-2">
+          <RbacGuard allowedRoles={TAB_PERMISSIONS.admin} currentRole={activeRole} moduleName="Company Administrator Console">
+            <div className="space-y-6">
+              {/* Header Banner */}
+              <div className="p-5 sm:p-6 rounded-xl bg-[#111114] border border-white/[0.08] shadow-lg space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center space-x-3.5">
                   <div className="w-10 h-10 rounded-lg bg-zinc-800 text-amber-400 border border-white/[0.08] flex items-center justify-center font-bold">
@@ -1757,7 +1845,8 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          </RbacGuard>
         )}
       </main>
 
