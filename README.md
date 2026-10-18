@@ -1,7 +1,27 @@
 # SetuBrain (सेतु = The Bridge)
 
-> **The Graph-Powered Bridge Between Scattered Company Knowledge and Reliable AI Execution**  
-> *Built for the WeMakeDevs FalkorDB Hackathon & the Y Combinator "Company Brain" Request for Startups (RFS).*
+<div align="center">
+
+![SetuBrain Banner](https://raw.githubusercontent.com/Darshan3690/SetuBrain/main/public/icon.svg)
+
+### The Graph-Powered Bridge Between Scattered Company Knowledge & Deterministic AI Execution
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-setu--brain.vercel.app-10b981?style=for-the-badge&logo=vercel&logoColor=white)](https://setu-brain.vercel.app)
+[![FalkorDB](https://img.shields.io/badge/Powered%20By-FalkorDB%20Graph-ff3e00?style=for-the-badge&logo=redis&logoColor=white)](https://github.com/FalkorDB/FalkorDB)
+[![YC RFS](https://img.shields.io/badge/Y%20Combinator-Company%20Brain%20RFS-ff6600?style=for-the-badge)](https://www.ycombinator.com/rfs#company-brain)
+[![Track Qual](https://img.shields.io/badge/Hackathon-Triple%20Track%20Certified-6366f1?style=for-the-badge)](https://github.com/Darshan3690/SetuBrain#--hackathon-track-declarations)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
+**[🌐 Experience Live Demo](https://setu-brain.vercel.app)** • **[⚡ Launch Console View](https://setu-brain.vercel.app/?view=console)** • **[📑 Read Full Guide](https://github.com/Darshan3690/SetuBrain/blob/main/setubrain_full_guide.md)** • **[🔌 MCP Endpoint](https://setu-brain.vercel.app/api/mcp)**
+
+</div>
+
+---
+
+> *"The Company Brain is the missing bridge between raw company data and reliable AI automation."*  
+> — **[Y Combinator Request for Startups (Company Brain)](https://www.ycombinator.com/rfs#company-brain)**
+
+In Sanskrit, **Setu (सेतु)** means **The Bridge**. **SetuBrain** leverages **[FalkorDB](https://github.com/FalkorDB/FalkorDB)** to transform scattered wikis, PDF policy manuals, HR rules, and Slack approval threads into a deterministic, multi-tenant property graph that eliminates LLM hallucinations and compiles operational paths into executable agent skills.
 
 ```bash
 # ⚡ 1-Click Instant Run (FalkorDB + Next.js):
@@ -22,12 +42,12 @@ graph TD
     classDef contact fill:#78350f,stroke:#fbbf24,stroke-width:2px,color:#fff;
     classDef conflict fill:#7f1d1d,stroke:#f87171,stroke-width:2px,color:#fff;
 
-    Dept["(:Department)<br/>Finance / Eng / HR"]:::dept
-    Proc["(:Procedure)<br/>PROC-SAAS-01"]:::proc
-    App["(:Application)<br/>Ramp / Brex"]:::app
+    Dept["(:Department)<br/>Finance / Eng / HR / Security"]:::dept
+    Proc["(:Procedure)<br/>PROC-SAAS-01 / PROC-TRV-02"]:::proc
+    App["(:Application)<br/>Ramp / Navan / CrowdStrike"]:::app
     PolActive["(:Policy 2026)<br/>POL-EXP-2026 ($250)"]:::pol
     PolOld["(:Policy 2024)<br/>POL-EXP-2024 ($150)"]:::conflict
-    Contact["(:Contact / SME)<br/>Priya Sharma (CFO)"]:::contact
+    Contact["(:Contact / SME)<br/>Priya Sharma (VP Finance)"]:::contact
     SkillMD["Dynamic SKILL.md<br/>& MCP Tool Output"]:::proc
 
     Dept -->|":RESPONSIBLE_FOR"| Proc
@@ -50,18 +70,20 @@ graph TD
 
 ## 🏆 Hackathon Track Declarations
 
-SetuBrain has been purposefully architected and implemented to qualify across **ALL THREE HACKATHON TRACKS**:
+SetuBrain is purposefully architected and implemented to qualify across **ALL THREE HACKATHON TRACKS**:
 
 ### 🎯 Track 03: Company Brain (Primary Track)
-* **Y Combinator RFS Alignment**: Bridges the gap between unstructured company knowledge (Notion, Slack, HR wikis) and deterministic AI agents.
+* **[Y Combinator RFS: Company Brain](https://www.ycombinator.com/rfs#company-brain) Alignment**: Direct solution bridging unstructured company silos (Notion, Slack, HR manuals) into deterministic AI agents.
 * **Deterministic Multi-Hop Graph Traversal**: Replaces fuzzy vector similarity with explicit graph paths traversing `(:Department)-[:RESPONSIBLE_FOR]->(:Procedure)-[:USES_APP]->(:Application)-[:GOVERNED_BY]->(:Policy)-[:APPROVED_BY]->(:Contact)`.
-* **5 Enterprise Trap Benchmarks**: Conquers all 5 fundamental failure modes where flat vector RAG catastrophically fails.
-* **Dynamic `SKILL.md` Compilation**: Automatically compiles verified graph paths into executable Antigravity agent skills.
+* **5 Enterprise Trap Benchmarks**: Conquers all 5 fundamental failure modes where flat vector RAG catastrophically fails (100% vs 26.7%).
+* **Dynamic `SKILL.md` Compilation**: Automatically compiles verified graph paths into executable Antigravity/Claude agent skills.
 * **Interactive 3D WebGL Spatial Graph Engine**: Built-in Three.js force-directed WebGL visualizer with dynamic orbital camera, particle streams on traversal paths, spatial glass node HUD, and 1-click dual-mode toggle (3D Spatial Orbit vs 2D Topology Schema).
+* **Cognee-Inspired Search Strategy Switcher**: Switch between `⚡ Direct Cypher`, `🧠 Graph CoT`, `⏳ Temporal Slice`, and `🛠️ Agent Skill` modes on any query.
 
 ### 🧠 Track 02: Agent Memory & Coordination
-* **Curator Agent Contradiction Scanner**: Detects contradictory policy pairs linked by `[:CONFLICTS_WITH]`, halts execution, and allows curators to resolve contradictions into explicit `[:SUPERSEDES]` relationships.
-* **Closed Learning Loop & SME Expert Inbox**: When an unverified topic is encountered, SetuBrain deterministically abstains and routes the topic to the designated department Subject Matter Expert. The SME reviews and approves the procedure in 1 click, publishing new nodes (`:Procedure`, `:Policy`) directly into live FalkorDB Cypher storage.
+* **Automated Contradiction & Supersession Engine**: Ports Cognee graph contradiction logic to detect conflicting policies on ingest, flag `[:CONFLICTS_WITH]` edges, halt execution, and empower curators to convert them into `[:SUPERSEDES]` relationships.
+* **Closed Learning Loop & SME Expert Inbox**: When an unverified topic is encountered, SetuBrain deterministically abstains and routes the query to the designated department Subject Matter Expert. The SME reviews and approves the procedure in 1 click, publishing new nodes (`:Procedure`, `:Policy`) directly into live [FalkorDB](https://github.com/FalkorDB/FalkorDB) Cypher storage.
+* **Session Distillation & Curator Review Queue**: Translates user feedback (`👍 Verified`, `👎 Distill to Curator`) into structured operational proposals for Knowledge Managers.
 * **Persistent Episodic Memory**: Multi-turn agent interaction episodes are persisted in FalkorDB via Cypher parameterized `CREATE (e:Episode ...)` nodes with query latency, status codes, and session timestamps.
 
 ### 🔌 Track 01: Agents That Act on Connected Data via Model Context Protocol (MCP)
@@ -77,7 +99,11 @@ SetuBrain has been purposefully architected and implemented to qualify across **
 
 ## 💡 The Pitch Hook
 
-> *"Y Combinator’s Company Brain RFS states that the Company Brain is 'the missing bridge between raw company data and reliable AI automation.' In Sanskrit, **Setu** means **Bridge**. **SetuBrain** uses FalkorDB to bridge scattered policies, tickets, and human experts into deterministic answers and executable `SKILL.md` files."*
+> *"Every enterprise deploying LLMs faces the same disaster: agents quote outdated 2024 expense limits, hallucinate IT procedures, execute contradictory security rules, and act on unverified hallway whispers.*  
+> 
+> *Flat Vector RAG cannot solve this because cosine similarity is topologically blind.*  
+> 
+> ***SetuBrain** solves this with **[FalkorDB](https://github.com/FalkorDB/FalkorDB)** graph intelligence—providing multi-hop traversal, temporal supersession, closed-loop SME escalation, and audit provenance."*
 
 Flat vector RAG approaches fail in enterprise environments because embeddings:
 1. **Cannot recognize supersession**: Cannot discern that a 2026 policy supersedes a 2024 policy ($250 vs $150 travel limits).
@@ -86,7 +112,7 @@ Flat vector RAG approaches fail in enterprise environments because embeddings:
 4. **Hallucinate absent policies**: Fabricates plausible GPU cluster quotas instead of deterministically abstaining.
 5. **Lack audit provenance**: Cannot trace an executive exception back to original Slack threads and sign-offs.
 
-**SetuBrain** solves all 5 enterprise traps using **FalkorDB** multi-tenant knowledge graphs.
+**SetuBrain** solves all 5 enterprise traps using **[FalkorDB](https://github.com/FalkorDB/FalkorDB)** multi-tenant knowledge graphs.
 
 ---
 
@@ -134,19 +160,20 @@ Flat vector RAG approaches fail in enterprise environments because embeddings:
 - `(:Department {id, name, slug, tenantId, healthScore})`
 - `(:Procedure {id, title, category, maxBudget, currency, status})`
 - `(:Application {id, name, url, authType})`
-- `(:Policy {id, title, version, status, maxLimit, content})`
+- `(:Policy {id, title, version, status, maxLimit, content, effective_date, review_date})`
 - `(:Contact {id, name, email, role, title})`
-- `(:Decision {id, title, rationale, timestamp})`
+- `(:Decision {id, title, rationale, sourceUrl, sourcePlatform, timestamp})`
 - `(:Document {id, title, type, sourceUrl})`
 - `(:Episode {id, sessionId, tenantId, query, status, trapType, latencyMs, timestamp})`
+- `(:PendingCuratorProposal {id, query, synthesizedRule, status, timestamp})`
 
 ### Relationship Types
 - `(:Department)-[:RESPONSIBLE_FOR]->(:Procedure)`
 - `(:Procedure)-[:USES_APP]->(:Application)`
 - `(:Procedure)-[:GOVERNED_BY]->(:Policy)`
 - `(:Procedure)-[:APPROVED_BY]->(:Contact)`
-- `(:Policy)-[:SUPERSEDES {reason, date}]->(:Policy)`
-- `(:Policy)-[:CONFLICTS_WITH {severity, flaggedBy}]->(:Policy)`
+- `(:Policy)-[:SUPERSEDES {reason, date, resolvedBy}]->(:Policy)`
+- `(:Policy)-[:CONFLICTS_WITH {severity, flaggedBy, detected_at}]->(:Policy)`
 - `(:Decision)-[:GOVERNED_BY]->(:Policy)`
 - `(:Decision)-[:SUPPORTED_BY]->(:Document)`
 - `(:Decision)-[:APPROVED_BY]->(:Contact)`
@@ -223,14 +250,14 @@ SetuBrain runs an MCP JSON-RPC 2.0 endpoint at `/api/mcp`.
 
 #### 1. List Available Tools
 ```bash
-curl -X POST http://localhost:3000/api/mcp \
+curl -X POST https://setu-brain.vercel.app/api/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}'
 ```
 
 #### 2. Execute Policy Traversal via MCP
 ```bash
-curl -X POST http://localhost:3000/api/mcp \
+curl -X POST https://setu-brain.vercel.app/api/mcp \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -248,7 +275,7 @@ curl -X POST http://localhost:3000/api/mcp \
 
 ### 🖥️ Connect External Agents: Claude Desktop & Cursor Configuration
 
-Add SetuBrain directly to your `claude_desktop_config.json` (or Cursor MCP settings) to let Claude or Cursor query your live FalkorDB knowledge graph natively:
+Add SetuBrain directly to your `claude_desktop_config.json` (or Cursor MCP settings) to let Claude or Cursor query your live [FalkorDB](https://github.com/FalkorDB/FalkorDB) knowledge graph natively:
 
 ```json
 {
@@ -258,19 +285,19 @@ Add SetuBrain directly to your `claude_desktop_config.json` (or Cursor MCP setti
       "args": [
         "-y",
         "mcp-proxy",
-        "http://localhost:3000/api/mcp"
+        "https://setu-brain.vercel.app/api/mcp"
       ]
     }
   }
 }
 ```
 
-*Or direct SSE / HTTP tool consumption:*
+*Or direct HTTP tool consumption:*
 ```json
 {
   "mcpServers": {
     "setubrain-http": {
-      "url": "http://localhost:3000/api/mcp",
+      "url": "https://setu-brain.vercel.app/api/mcp",
       "transport": "http"
     }
   }
@@ -298,9 +325,9 @@ npm run dev
 ### Option B: Zero-Config Resilient Mode (No Docker Required!)
 SetuBrain features an automatic dual-engine architecture:
 - If a live FalkorDB instance is detected on `localhost:6379`, SetuBrain executes live Cypher queries and glows `FalkorDB Live Cypher Engine`.
-- If Docker is offline, SetuBrain automatically activates the `Resilient Graph Engine`, preserving graph topology, all 5 enterprise traps, multi-tenancy, and MCP endpoints with zero downtime!
+- If Docker is offline or hosted on cloud serverless (like [setu-brain.vercel.app](https://setu-brain.vercel.app)), SetuBrain automatically activates the `Resilient Graph Engine`, preserving graph topology, all 5 enterprise traps, multi-tenancy, and MCP endpoints with zero downtime!
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [https://setu-brain.vercel.app](https://setu-brain.vercel.app) or [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
@@ -310,7 +337,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 - **Human Architect**: Darshan Rajput (System architecture, multi-tenant Cypher schemas, 5 deliberate enterprise traps, benchmark test cases, and domain logic).
 - **AI Coding Assistant**: Google Antigravity IDE (Gemini 2.5 Flash / Gemini 2.5 Pro) with Gravitas verification runtime.
-- **Assistance Areas**: Next.js 15 App Router boilerplate, SVG topology coordinate calculations, Lucide React icons, and JSON-RPC 2.0 serialization for MCP.
+- **Assistance Areas**: Next.js 16 App Router boilerplate, SVG topology coordinate calculations, Lucide React icons, and JSON-RPC 2.0 serialization for MCP.
 - **Verification**: 100% of Cypher schemas, traversal logic, multi-tenant boundary checks, and API endpoints were verified via end-to-end integration tests and browser automated testing.
 
 ---
