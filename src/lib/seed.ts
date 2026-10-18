@@ -1,4 +1,5 @@
 import { getTenantGraph } from './falkordb';
+import { detectContradictionsOnIngest, resolveTemporalSupersessionOnIngest, ContradictionFinding, SupersessionResult } from './contradictionEngine';
 
 export type PropertyValue = string | number | boolean | null | undefined | string[];
 
@@ -28,6 +29,53 @@ export const fallbackStore: Record<string, FallbackTenantGraph> = {
 
 export let isGpuProcedureApproved = false;
 export let curatorConflictStatus: 'DETECTED' | 'RESOLVED' = 'DETECTED';
+
+export interface DistilledSessionLesson {
+  id: string;
+  query: string;
+  answerSummary: string;
+  feedback: 'thumbs_up' | 'thumbs_down';
+  proposedPolicy: string;
+  department: string;
+  status: 'PENDING_TRIAGE' | 'ACCEPTED' | 'REJECTED';
+  timestamp: string;
+}
+
+export const distilledLessons: DistilledSessionLesson[] = [
+  {
+    id: 'DISTILL-01',
+    query: 'Can we expense ergonomic standing desks over $500?',
+    answerSummary: 'Abstained / No existing procedure for standing desks over $500.',
+    feedback: 'thumbs_down',
+    proposedPolicy: 'Finance standing desk stipend policy: up to $500 allowed every 2 years with medical/ergonomic signoff via Navan.',
+    department: 'Finance',
+    status: 'PENDING_TRIAGE',
+    timestamp: '2026-10-18T14:30:00Z',
+  }
+];
+
+export function getDistilledLessons(): DistilledSessionLesson[] {
+  return [...distilledLessons];
+}
+
+export function addDistilledLesson(lesson: Omit<DistilledSessionLesson, 'id' | 'timestamp' | 'status'>): DistilledSessionLesson {
+  const newLesson: DistilledSessionLesson = {
+    ...lesson,
+    id: `DISTILL-${Math.floor(100 + Math.random() * 900)}`,
+    status: 'PENDING_TRIAGE',
+    timestamp: new Date().toISOString(),
+  };
+  distilledLessons.unshift(newLesson);
+  return newLesson;
+}
+
+export function acceptDistilledLesson(id: string): DistilledSessionLesson | null {
+  const item = distilledLessons.find((d) => d.id === id);
+  if (item) {
+    item.status = 'ACCEPTED';
+  }
+  return item || null;
+}
 
 export function getGpuApprovalStatus(): boolean {
   return isGpuProcedureApproved;
@@ -247,6 +295,26 @@ export async function addCustomPolicy(input: CustomPolicyInput) {
     { from: polId, to: contactId, type: 'APPROVED_BY' }
   );
 
+  // Cognee-inspired Contradiction & Supersession Evaluation
+  const newPolicyNode = store.nodes.find((n) => n.id === polId)!;
+  const contradictions = detectContradictionsOnIngest(store, newPolicyNode);
+  const supersessions = resolveTemporalSupersessionOnIngest(store, newPolicyNode);
+
+  // If contradictions detected, record first-class [:CONFLICTS_WITH] edges
+  for (const c of contradictions) {
+    store.edges.push({
+      from: c.sourcePolicyId,
+      to: c.targetPolicyId,
+      type: 'CONFLICTS_WITH',
+      properties: {
+        conflictId: c.conflictId,
+        severity: c.severity,
+        reason: c.reason,
+        detected_at: c.detectedAt,
+      },
+    });
+  }
+
   // Attempt live FalkorDB write
   try {
     const { graph } = await getTenantGraph(tenantKey);
@@ -263,6 +331,23 @@ export async function addCustomPolicy(input: CustomPolicyInput) {
       MERGE (proc)-[:GOVERNED_BY]->(pol)
       MERGE (pol)-[:APPROVED_BY]->(sme)
     `);
+
+    // Write contradiction edges to live FalkorDB if found
+    for (const c of contradictions) {
+      await graph.query(`
+        MATCH (p1:Policy {id: '${c.sourcePolicyId}'}), (p2:Policy {id: '${c.targetPolicyId}'})
+        MERGE (p1)-[:CONFLICTS_WITH {conflictId: '${c.conflictId}', severity: '${c.severity}', reason: '${c.reason.replace(/'/g, "\\'")}'}]->(p2)
+      `);
+    }
+
+    // Write supersession edges to live FalkorDB if found
+    for (const s of supersessions) {
+      await graph.query(`
+        MATCH (newP:Policy {id: '${s.newPolicyId}'}), (oldP:Policy {id: '${s.supersededPolicyId}'})
+        SET oldP.superseded = true, oldP.superseded_by = '${s.newPolicyId}'
+        MERGE (newP)-[:SUPERSEDES {reason: '${s.reason.replace(/'/g, "\\'")}'}]->(oldP)
+      `);
+    }
   } catch {
     // live db optional
   }
@@ -272,7 +357,13 @@ export async function addCustomPolicy(input: CustomPolicyInput) {
     policyId: polId,
     procedureId: procId,
     title: input.title,
-    message: `Policy "${input.title}" published live into ${tenantKey} graph!`,
+    contradictions,
+    supersessions,
+    message: contradictions.length > 0
+      ? `Policy "${input.title}" published with ${contradictions.length} contradiction(s) flagged for Curator review!`
+      : supersessions.length > 0
+      ? `Policy "${input.title}" published and automatically superseded ${supersessions.length} older policy version(s)!`
+      : `Policy "${input.title}" published live into ${tenantKey} graph!`,
   };
 }
 

@@ -7,9 +7,14 @@ export const runtime = 'nodejs';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { tenantId = 'tenant_acme', query = 'How do I purchase software?' } = body;
+    const { 
+      tenantId = 'tenant_acme', 
+      query = 'How do I purchase software?',
+      sessionId = 'sess_default',
+      searchStrategy = 'CYPHER'
+    } = body;
 
-    const result = await queryTenantGraph(tenantId, query);
+    const result = await queryTenantGraph(tenantId, query, sessionId, searchStrategy);
     return NextResponse.json({
       ok: true,
       ...result,

@@ -10,6 +10,7 @@ import {
   X,
   Sparkles
 } from 'lucide-react';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface SpatialGraph3DProps {
   tenantId: string;
@@ -203,12 +204,22 @@ export default function SpatialGraph3D({
     }
   }, [tenantId, trapType, isGpuApproved, curatorStatus]);
 
+  const { theme } = useTheme();
+
   // Update graphData dynamically when tenant, trap or status changes
   useEffect(() => {
     if (graphInstanceRef.current) {
       graphInstanceRef.current.graphData(graphData);
     }
   }, [graphData]);
+
+  // Update canvas background when theme changes
+  useEffect(() => {
+    if (graphInstanceRef.current) {
+      const bg = theme === 'light' ? '#f8fafc' : '#030712';
+      graphInstanceRef.current.backgroundColor(bg);
+    }
+  }, [theme]);
 
   // Initialize 3D WebGL Force Graph once on mount
   useEffect(() => {
@@ -235,20 +246,21 @@ export default function SpatialGraph3D({
 
         const width = containerRef.current.clientWidth || 800;
         const height = containerRef.current.clientHeight || 520;
+        const currentBg = theme === 'light' ? '#f8fafc' : '#030712';
 
         // Initialize WebGL Force Graph
         const GraphConstructor = ForceGraph3DModule as unknown as new (el: HTMLElement) => ForceGraph3DInstance;
         const Graph = new GraphConstructor(containerRef.current)
           .width(width)
           .height(height)
-          .backgroundColor('#030712')
+          .backgroundColor(currentBg)
           .showNavInfo(false)
           .graphData(graphData)
           .nodeLabel((node: Graph3DNode) => `
-            <div style="background: rgba(3, 7, 18, 0.9); padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.8); font-family: monospace; color: #fff;">
+            <div style="background: ${theme === 'light' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(3, 7, 18, 0.9)'}; padding: 8px 12px; border-radius: 10px; border: 1px solid ${theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.15)'}; box-shadow: 0 10px 30px rgba(0,0,0,0.2); font-family: monospace; color: ${theme === 'light' ? '#0f172a' : '#fff'};">
               <div style="font-weight: bold; font-size: 13px;">${node.name}</div>
-              <div style="color: #38bdf8; font-size: 11px; margin-top: 2px;">${node.type} • ID: ${node.id}</div>
-              <div style="color: #94a3b8; font-size: 10px; margin-top: 4px; max-width: 220px;">${node.description}</div>
+              <div style="color: #0284c7; font-size: 11px; margin-top: 2px;">${node.type} • ID: ${node.id}</div>
+              <div style="color: ${theme === 'light' ? '#475569' : '#94a3b8'}; font-size: 10px; margin-top: 4px; max-width: 220px;">${node.description}</div>
               ${node.status ? `<div style="font-size: 9px; margin-top: 4px; color: ${node.status === 'SUPERSEDED' ? '#ef4444' : '#10b981'}; font-weight: bold;">[${node.status}]</div>` : ''}
             </div>
           `)

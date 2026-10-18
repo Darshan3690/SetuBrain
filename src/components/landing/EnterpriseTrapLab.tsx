@@ -280,7 +280,7 @@ export default function EnterpriseTrapLab({ onLaunchConsole }: { onLaunchConsole
                   </div>
 
                   {/* 5 Floating Isometric Cards in Pipeline */}
-                  <div className="grid grid-cols-5 gap-2 pt-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2">
                     {[
                       { name: 'Finance', icon: Building2, tag: 'DEPT-FIN', hop: 0 },
                       { name: 'Proc-SaaS', icon: FileText, tag: 'PROC-SAAS-01', hop: 1 },
@@ -295,6 +295,8 @@ export default function EnterpriseTrapLab({ onLaunchConsole }: { onLaunchConsole
                         <div
                           key={idx}
                           className={`flex flex-col items-center p-2.5 rounded-lg border text-center transition-all duration-300 ${
+                            idx === 4 ? 'col-span-2 sm:col-span-1' : ''
+                          } ${
                             isCurrent
                               ? 'bg-zinc-800 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-105'
                               : isReached

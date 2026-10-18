@@ -90,7 +90,7 @@ export default function DashboardRoleBanner({
           </div>
         ) : (
           <SignInButton mode="modal">
-            <button className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md bg-zinc-100 hover:bg-white text-zinc-950 transition-all cursor-pointer">
+            <button className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 transition-all cursor-pointer border border-zinc-700/60 dark:border-transparent">
               <KeyRound className="w-3 h-3" />
               <span>Sign In</span>
             </button>

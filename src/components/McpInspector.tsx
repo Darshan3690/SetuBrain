@@ -168,7 +168,7 @@ export default function McpInspector() {
             <button
               onClick={handleExecuteMcpCall}
               disabled={loading}
-              className="w-full py-2.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
+              className="w-full py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-950 text-xs font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer border border-zinc-700/60 dark:border-transparent"
             >
               {loading ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />

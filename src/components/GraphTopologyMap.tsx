@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Network, ZoomIn, ZoomOut, RotateCcw, Info } from 'lucide-react';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface GraphTopologyProps {
   tenantId: string;
@@ -31,6 +32,8 @@ interface EdgeCoord {
 }
 
 export default function GraphTopologyMap({ tenantId, trapType, isGpuApproved, curatorStatus }: GraphTopologyProps) {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const [selectedNode, setSelectedNode] = useState<NodeCoord | null>(null);
   const [zoom, setZoom] = useState(1);
 
@@ -199,7 +202,7 @@ export default function GraphTopologyMap({ tenantId, trapType, isGpuApproved, cu
       </div>
 
       {/* SVG Canvas */}
-      <div className="relative w-full h-80 bg-slate-950/80 rounded-2xl border border-slate-800/80 overflow-auto scrollbar-none flex items-center justify-center">
+      <div className={`relative w-full h-80 ${isLight ? 'bg-slate-100/90 border-slate-300' : 'bg-slate-950/80 border-slate-800/80'} rounded-2xl border overflow-auto scrollbar-none flex items-center justify-center transition-colors`}>
         <svg
           viewBox="0 0 820 720"
           className="w-full h-full transition-transform duration-200"
@@ -318,7 +321,7 @@ export default function GraphTopologyMap({ tenantId, trapType, isGpuApproved, cu
                   x={n.x}
                   y={n.y + 28}
                   textAnchor="middle"
-                  fill={active ? '#ffffff' : '#cbd5e1'}
+                  fill={active ? (isLight ? '#0f172a' : '#ffffff') : (isLight ? '#475569' : '#cbd5e1')}
                   fontSize="10"
                   fontWeight={active ? 'bold' : 'normal'}
                   className="select-none pointer-events-none"

@@ -1,4 +1,5 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
+import { headers } from 'next/headers';
 
 export type UserRole = 
   | 'EMPLOYEE' 
@@ -11,22 +12,48 @@ export interface UserSessionContext {
   orgId: string | null;
   role: UserRole;
   tenantId: string;
+  isGuest?: boolean;
 }
 
+const VALID_ROLES: UserRole[] = [
+  'EMPLOYEE',
+  'DEPARTMENT_SME',
+  'KNOWLEDGE_MANAGER',
+  'COMPANY_ADMINISTRATOR',
+];
+
 /**
- * Resolves the authenticated user's role and tenant from Clerk metadata.
- * Checks session claims, then live user public metadata, defaulting to 'EMPLOYEE' and 'tenant_acme'.
+ * Resolves the authenticated user's role and tenant from Clerk metadata,
+ * with graceful fallback to demo headers for guest exploration.
  */
 export async function getSessionRoleContext(): Promise<UserSessionContext> {
+  let demoRole: UserRole | null = null;
+  let demoTenant = 'tenant_acme';
+
+  try {
+    const headerList = await headers();
+    const roleHeader = headerList.get('x-demo-role');
+    if (roleHeader && VALID_ROLES.includes(roleHeader as UserRole)) {
+      demoRole = roleHeader as UserRole;
+    }
+    const tenantHeader = headerList.get('x-demo-tenant');
+    if (tenantHeader) {
+      demoTenant = tenantHeader;
+    }
+  } catch {
+    // headers() might not be available in all contexts
+  }
+
   const session = await auth();
   const userId = session.userId;
   
   if (!userId) {
     return {
-      userId: null,
+      userId: demoRole ? 'demo_guest_user' : null,
       orgId: null,
-      role: 'EMPLOYEE',
-      tenantId: 'tenant_acme',
+      role: demoRole || 'EMPLOYEE',
+      tenantId: demoTenant,
+      isGuest: true,
     };
   }
 
@@ -41,8 +68,8 @@ export async function getSessionRoleContext(): Promise<UserSessionContext> {
       const client = await clerkClient();
       const user = await client.users.getUser(userId);
       if (user) {
-        if (!role) role = (user.publicMetadata?.role as UserRole) || 'EMPLOYEE';
-        if (!tenantId) tenantId = (user.publicMetadata?.tenantId as string) || 'tenant_acme';
+        if (!role) role = (user.publicMetadata?.role as UserRole) || demoRole || 'EMPLOYEE';
+        if (!tenantId) tenantId = (user.publicMetadata?.tenantId as string) || demoTenant;
       }
     } catch (e) {
       console.warn('Failed to fetch user metadata from Clerk client:', e);
@@ -52,19 +79,29 @@ export async function getSessionRoleContext(): Promise<UserSessionContext> {
   return {
     userId,
     orgId: session.orgId || null,
-    role: role || 'EMPLOYEE',
-    tenantId: tenantId || 'tenant_acme',
+    role: role || demoRole || 'EMPLOYEE',
+    tenantId: tenantId || demoTenant,
+    isGuest: false,
   };
 }
 
 /**
- * Guard utility for API routes and server actions
+ * Guard utility for API routes and server actions.
+ * Allows demo sessions with x-demo-role to explore without authentication barriers.
  */
 export async function requireRole(allowedRoles: UserRole[]): Promise<UserSessionContext> {
   const context = await getSessionRoleContext();
   
+  // If guest mode is active, allow requested demo role if it fits
+  if (context.isGuest) {
+    if (allowedRoles.includes(context.role) || context.role === 'COMPANY_ADMINISTRATOR') {
+      return context;
+    }
+    throw new Error(`Forbidden: Current demo role '${context.role}' does not have sufficient permissions. Required: ${allowedRoles.join(' or ')}`);
+  }
+
   if (!context.userId) {
-    throw new Error('Unauthorized: Please sign in with Clerk to access SetuBrain.');
+    throw new Error('Unauthorized: Please sign in or select an authorized role to access SetuBrain.');
   }
 
   if (!allowedRoles.includes(context.role) && context.role !== 'COMPANY_ADMINISTRATOR') {

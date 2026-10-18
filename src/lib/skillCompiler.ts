@@ -45,7 +45,19 @@ This skill provides verified, graph-backed instructions compiled directly from t
 - **Department**: ${input.department}
 
 ## Execution Steps
-${input.steps.split(/\d+\.\s+/).filter(Boolean).map((s, idx) => `${idx + 1}. **${s.trim()}**`).join('\n')}
+${(() => {
+  const parsed = (input.steps || '')
+    .split(/\d+\.\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parsed.length > 0) {
+    return parsed.map((s, idx) => `${idx + 1}. **${s}**`).join('\n');
+  }
+  return `1. **Authenticate via Enterprise SSO** into [${input.application}](${input.applicationUrl}) using active corporate credentials.
+2. **Verify Policy Compliance** against governing policy ${input.governingPolicy} (v${input.policyVersion}).
+3. **Submit Transaction or Procedure Request** citing procedure identifier \`${input.procedureId}\`.
+4. **Await Authoritative Routing & Sign-off** from designated SME owner **${input.smeName}** (\`${input.smeEmail}\`).`;
+})()}
 
 ## Exceptions & Escalation
 - ${input.exceptions}
