@@ -32,6 +32,7 @@ import GraphTopologyMap from '@/components/GraphTopologyMap';
 import SpatialGraph3D from '@/components/SpatialGraph3D';
 import McpInspector from '@/components/McpInspector';
 import DashboardRoleBanner from '@/components/DashboardRoleBanner';
+import SetuLogo from '@/components/SetuLogo';
 import {
   useUser,
   SignInButton,
@@ -578,8 +579,8 @@ export default function SetuBrainConsole({ onBackToLanding }: { onBackToLanding?
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
           {/* Left: Brand + Workspace Breadcrumb */}
           <div className="flex items-center space-x-3 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
-              <GitBranch className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-xl bg-[#111114] border border-white/[0.1] flex items-center justify-center shadow-lg shadow-sky-500/10 p-1 shrink-0">
+              <SetuLogo size={20} />
             </div>
             <span className="text-base font-bold tracking-tight text-white shrink-0">SetuBrain</span>
             <span className="text-zinc-600 text-sm select-none hidden sm:inline">/</span>

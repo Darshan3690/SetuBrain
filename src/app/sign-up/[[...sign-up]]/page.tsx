@@ -1,6 +1,6 @@
 import { SignUp } from '@clerk/nextjs';
 import Link from 'next/link';
-import { GitBranch } from 'lucide-react';
+import SetuLogo from '@/components/SetuLogo';
 
 export default function SignUpPage() {
   return (
@@ -12,8 +12,8 @@ export default function SignUpPage() {
       <div className="mb-8 flex flex-col items-center space-y-2 relative z-10">
         <Link href="/" className="flex items-center space-x-3 group">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-cyan-400 p-[1px] shadow-lg shadow-sky-500/20 group-hover:shadow-sky-500/40 transition-all">
-            <div className="w-full h-full bg-[#030712] rounded-[11px] flex items-center justify-center">
-              <GitBranch className="w-5 h-5 text-sky-400" />
+            <div className="w-full h-full bg-[#030712] rounded-[11px] flex items-center justify-center p-1.5">
+              <SetuLogo size={24} />
             </div>
           </div>
           <div className="flex items-baseline space-x-2">

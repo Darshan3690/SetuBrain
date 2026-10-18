@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="setu-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="64" y2="0">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+  </defs>
+  <path d="M4 44H60" stroke="url(#setu-grad)" stroke-width="5.5" stroke-linecap="round"/>
+  <path d="M18 12V52M46 12V52" stroke="url(#setu-grad)" stroke-width="5.5" stroke-linecap="round"/>
+  <path d="M4 44L18 15Q32 53 46 15L60 44" stroke="url(#setu-grad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

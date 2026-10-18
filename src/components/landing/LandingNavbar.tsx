@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { GitBranch, Zap, Building2, ChevronDown, Menu, X } from 'lucide-react';
+import { Zap, Building2, ChevronDown, Menu, X } from 'lucide-react';
 import { useUser, SignInButton, UserButton } from '@clerk/nextjs';
+import SetuLogo from '@/components/SetuLogo';
 
 interface LandingNavbarProps {
   onLaunchConsole: () => void;
@@ -26,8 +27,8 @@ export default function LandingNavbar({
         <div className="flex items-center space-x-3.5">
           <a href="#" className="flex items-center space-x-3 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-cyan-400 p-[1px] shadow-lg shadow-sky-500/20 group-hover:shadow-sky-500/40 transition-all">
-              <div className="w-full h-full bg-[#030712] rounded-[11px] flex items-center justify-center">
-                <GitBranch className="w-5 h-5 text-sky-400" />
+              <div className="w-full h-full bg-[#030712] rounded-[11px] flex items-center justify-center p-1.5">
+                <SetuLogo size={24} />
               </div>
             </div>
             <div className="flex items-baseline space-x-2">

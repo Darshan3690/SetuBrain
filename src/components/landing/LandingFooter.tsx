@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { GitBranch, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
+import SetuLogo from '@/components/SetuLogo';
 
 export default function LandingFooter({ onLaunchConsole }: { onLaunchConsole: () => void }) {
   return (
@@ -50,8 +51,8 @@ export default function LandingFooter({ onLaunchConsole }: { onLaunchConsole: ()
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Brand Info */}
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center text-white">
-              <GitBranch className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-xl bg-[#111114] border border-white/[0.1] flex items-center justify-center p-1 text-white">
+              <SetuLogo size={20} />
             </div>
             <div>
               <div className="flex items-center space-x-2">
